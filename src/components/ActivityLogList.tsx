@@ -3,14 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { History, ArrowRightLeft, PlusCircle, PencilLine, Trash2, ShieldCheck, Donut, ClipboardPlus, SquareArrowRight } from "lucide-react";
 
-interface LogEntry {
-  id: string;
-  action: string;
-  ingredientName: string;
-  quantity?: number;
-  details?: string;
-  createdAt: string;
-}
+import { LogEntry } from "@/types";
 
 interface ActivityLogListProps {
   refreshTrigger?: number;

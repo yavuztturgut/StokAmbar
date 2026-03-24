@@ -3,14 +3,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { History, Search, Filter, ChevronLeft, ChevronRight, Download, PlusCircle, PencilLine, Trash2, ShieldCheck, Donut, ClipboardPlus, SquareArrowRight } from "lucide-react";
 
-interface LogEntry {
-  id: string;
-  action: string;
-  ingredientName: string;
-  quantity?: number;
-  details?: string;
-  createdAt: string;
-}
+import { LogEntry } from "@/types";
 
 export default function LogsPage() {
   const [logs, setLogs] = useState<LogEntry[]>([]);

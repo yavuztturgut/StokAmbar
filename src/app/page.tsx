@@ -7,13 +7,7 @@ import MovementButtons from "@/components/MovementButtons";
 import EditStockModal from "@/components/EditStockModal";
 import ActivityLogList from "@/components/ActivityLogList";
 
-interface Ingredient {
-  id: string;
-  name: string;
-  unit: string;
-  currentStock: number;
-  minStockLevel: number;
-}
+import { Ingredient } from "@/types";
 
 export default function Home() {
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
@@ -53,9 +47,9 @@ export default function Home() {
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans">
       {/* Modals */}
       {isAddModalOpen && (
-        <AddStockModal 
-          onClose={() => setIsAddModalOpen(false)} 
-          onSuccess={triggerRefresh} 
+        <AddStockModal
+          onClose={() => setIsAddModalOpen(false)}
+          onSuccess={triggerRefresh}
         />
       )}
 
@@ -70,24 +64,25 @@ export default function Home() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto p-8">
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
-            <div className="bg-blue-50 p-4 rounded-xl text-blue-600">
-              <Package size={28} />
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+          <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
+            <div className="bg-blue-50 p-3 rounded-xl text-blue-600">
+              <Package size={24} />
             </div>
             <div>
-              <p className="text-slate-500 text-sm font-medium">Toplam Kalem</p>
-              <p className="text-3xl font-bold">{ingredients.length}</p>
+              <p className="text-slate-500 text-[11px] font-bold uppercase tracking-wider">Toplam Kalem</p>
+              <p className="text-2xl font-black text-slate-800">{ingredients.length}</p>
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
-            <div className={`p-4 rounded-xl ${lowStockCount > 0 ? 'bg-amber-50 text-amber-600' : 'bg-green-50 text-green-600'}`}>
-              <AlertCircle size={28} />
+          <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
+            <div className={`p-3 rounded-xl ${lowStockCount > 0 ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-600'}`}>
+              <AlertCircle size={24} />
             </div>
             <div>
-              <p className="text-slate-500 text-sm font-medium">Kritik Stok</p>
-              <p className={`text-3xl font-bold ${lowStockCount > 0 ? 'text-amber-600' : 'text-green-600'}`}>
+              <p className="text-slate-500 text-[11px] font-bold uppercase tracking-wider">Kritik Stok</p>
+              <p className={`text-2xl font-black ${lowStockCount > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
                 {lowStockCount}
               </p>
             </div>
@@ -98,9 +93,15 @@ export default function Home() {
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
           <div className="p-6 border-b border-slate-50 flex justify-between items-center">
             <h2 className="text-lg font-bold">Mevcut Stok Durumu</h2>
-            <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Son Güncelleme: Az Önce</div>
+            <button
+              onClick={() => setIsAddModalOpen(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition-all shadow-lg shadow-indigo-100 active:scale-95 text-xs"
+            >
+              <Plus size={14} />
+              Yeni Malzeme Ekle
+            </button>
           </div>
-          
+
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
@@ -148,9 +149,10 @@ export default function Home() {
                       </td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-3">
-                          <MovementButtons 
-                            ingredientId={item.id} 
-                            onSuccess={triggerRefresh} 
+                          <MovementButtons
+                            ingredientId={item.id}
+                            currentStock={item.currentStock}
+                            onSuccess={triggerRefresh}
                           />
                           <button
                             onClick={() => setEditingIngredient(item)}

@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { X, Plus, Save } from "lucide-react";
+import toast from "react-hot-toast";
 
 interface AddStockModalProps {
   onSuccess: () => void;
@@ -19,6 +20,7 @@ export default function AddStockModal({ onSuccess, onClose }: AddStockModalProps
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    toast.dismiss();
     setIsSubmitting(true);
 
     try {
@@ -29,14 +31,15 @@ export default function AddStockModal({ onSuccess, onClose }: AddStockModalProps
       });
 
       if (response.ok) {
+        toast.success(`${formData.name} başarıyla eklendi!`);
         onSuccess();
         onClose();
       } else {
-        alert("Ekleme sırasında bir hata oluştu.");
+        toast.error("Ekleme sırasında bir hata oluştu.");
       }
     } catch (error) {
       console.error(error);
-      alert("Sunucu hatası.");
+      toast.error("Sunucu hatası.");
     } finally {
       setIsSubmitting(false);
     }

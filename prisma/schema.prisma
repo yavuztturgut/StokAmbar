@@ -9,7 +9,7 @@ datasource db {
 }
 
 model Ingredient {
-  id            String   @id @default(uuid())
+  id            Int      @id @default(autoincrement())
   name          String
   unit          String   // kg, lt, adet, paket
   currentStock  Float    @default(0)
@@ -20,8 +20,8 @@ model Ingredient {
 }
 
 model StockTransaction {
-  id           String   @id @default(uuid())
-  ingredientId String
+  id           Int      @id @default(autoincrement())
+  ingredientId Int
   type         String   // IN, OUT, WASTE
   quantity     Float
   note         String?
@@ -30,9 +30,9 @@ model StockTransaction {
 }
 
 model ActivityLog {
-  id             String   @id @default(uuid())
+  id             Int      @id @default(autoincrement())
   action         String   // CREATE, UPDATE, DELETE, IN, OUT, WASTE
-  ingredientId   String?
+  ingredientId   Int?
   ingredientName String
   quantity       Float?
   details        String?

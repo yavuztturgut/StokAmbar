@@ -2,13 +2,15 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { Plus, Minus, Trash2, Check, X, Donut, ClipboardPlus, SquareArrowRight } from "lucide-react";
+import toast from "react-hot-toast";
 
 interface MovementButtonsProps {
-  ingredientId: string;
+  ingredientId: number;
+  currentStock: number;
   onSuccess: () => void;
 }
 
-export default function MovementButtons({ ingredientId, onSuccess }: MovementButtonsProps) {
+export default function MovementButtons({ ingredientId, currentStock, onSuccess }: MovementButtonsProps) {
   const [activeType, setActiveType] = useState<"IN" | "OUT" | "WASTE" | null>(null);
   const [quantity, setQuantity] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -24,6 +26,13 @@ export default function MovementButtons({ ingredientId, onSuccess }: MovementBut
     const val = parseFloat(quantity);
     if (isNaN(val) || val <= 0) return;
 
+    // Check for negative stock
+    if ((activeType === "OUT" || activeType === "WASTE") && val > currentStock) {
+      toast.error(`Yetersiz stok! Mevcut: ${currentStock}`, { id: "insufficient-stock" });
+      return;
+    }
+
+    toast.dismiss(); // Clear any existing toasts before starting a new request
     setIsSubmitting(true);
     try {
       const response = await fetch("/api/transactions", {
@@ -38,11 +47,13 @@ export default function MovementButtons({ ingredientId, onSuccess }: MovementBut
       });
 
       if (response.ok) {
+        toast.success(`${quantity} ${activeType === 'IN' ? 'Stok eklendi' : 'Çıkış yapıldı'}`);
         onSuccess();
         setActiveType(null);
         setQuantity("");
       } else {
-        alert("Hata oluştu.");
+        const data = await response.json();
+        toast.error(data.error || "Hata oluştu.");
       }
     } catch (error) {
       console.error(error);

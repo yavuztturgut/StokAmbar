@@ -4,7 +4,8 @@ import { prisma } from "@/lib/prisma";
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { ingredientId, type, quantity, note } = body;
+    const { ingredientId: idRaw, type, quantity, note } = body;
+    const ingredientId = parseInt(idRaw);
 
     if (!ingredientId || !type || quantity === undefined) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -12,7 +13,27 @@ export async function POST(req: Request) {
 
     // Atomic transaction: Create movement record AND update ingredient stock
     const result = await prisma.$transaction(async (tx) => {
-      // 1. Create the transaction record
+      // 1. Get current ingredient and check stock
+      const current = await tx.ingredient.findUnique({
+        where: { id: ingredientId },
+      });
+
+      if (!current) {
+        throw new Error("Ingredient not found");
+      }
+
+      // Calculate new stock level
+      // IN increases stock, OUT and WASTE decrease it
+      const multiplier = type === "IN" ? 1 : -1;
+      const stockChange = parseFloat(quantity) * multiplier;
+      const newStock = current.currentStock + stockChange;
+
+      // Prevent negative stock
+      if (newStock < 0) {
+        throw new Error("Yetersiz stok! Stok miktarı sıfırın altına düşemez.");
+      }
+
+      // 2. Create the transaction record
       const transaction = await tx.stockTransaction.create({
         data: {
           ingredientId,
@@ -22,21 +43,15 @@ export async function POST(req: Request) {
         },
       });
 
-      // 2. Calculate new stock level
-      // IN increases stock, OUT and WASTE decrease it
-      const multiplier = type === "IN" ? 1 : -1;
-      const stockChange = parseFloat(quantity) * multiplier;
-
+      // 3. Update ingredient stock
       const updatedIngredient = await tx.ingredient.update({
         where: { id: ingredientId },
         data: {
-          currentStock: {
-            increment: stockChange,
-          },
+          currentStock: newStock,
         },
       });
 
-      // 3. Add Activity Log
+      // 4. Add Activity Log
       await tx.activityLog.create({
         data: {
           action: type, // IN, OUT, WASTE

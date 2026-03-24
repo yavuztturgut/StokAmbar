@@ -14,7 +14,7 @@ export default function Navbar() {
   ];
 
   return (
-    <header className="bg-white border-b border-slate-200 px-8 py-4 sticky top-0 z-50 backdrop-blur-md bg-white/80">
+    <header className="bg-[#fafbff] border-b border-indigo-100/60 px-8 py-4 sticky top-0 z-50 shadow-sm">
       <div className="max-w-7xl mx-auto flex justify-between items-center">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-3 group transition-all">
@@ -34,16 +34,14 @@ export default function Navbar() {
               <Link
                 key={link.href}
                 href={link.href}
-                className={`relative py-1 text-sm font-semibold transition-colors ${
-                  isActive ? "text-indigo-600" : "text-slate-500 hover:text-slate-800"
-                }`}
+                className={`relative py-1 text-sm font-semibold transition-colors ${isActive ? "text-indigo-600" : "text-slate-500 hover:text-slate-800"
+                  }`}
               >
                 {link.name}
                 {/* Animated Underline */}
-                <span 
-                  className={`absolute bottom-0 left-0 h-0.5 bg-indigo-600 transition-all duration-300 ${
-                    isActive ? "w-full" : "w-0 group-hover:w-full"
-                  }`}
+                <span
+                  className={`absolute bottom-0 left-0 h-0.5 bg-indigo-600 transition-all duration-300 ${isActive ? "w-full" : "w-0 group-hover:w-full"
+                    }`}
                   style={{ left: '50%', transform: 'translateX(-50%)' }}
                 />
                 {/* Hover logic is better with a group class on the Link if needed, 
@@ -61,7 +59,7 @@ export default function Navbar() {
 
         {/* Profile/Actions Placeholder */}
         <div className="flex items-center gap-4">
-          <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-[10px] font-bold text-slate-400">
+          <div className="w-10 h-10 rounded-2xl bg-indigo-50 border border-indigo-100/50 flex items-center justify-center text-xs font-black text-indigo-600 shadow-sm shadow-indigo-50">
             YY
           </div>
         </div>

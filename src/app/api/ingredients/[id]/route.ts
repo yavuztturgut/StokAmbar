@@ -3,7 +3,8 @@ import { prisma } from "@/lib/prisma";
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = await params;
+    const { id: idStr } = await params;
+    const id = parseInt(idStr);
     const body = await req.json();
     const { name, minStockLevel, unit } = body;
 
@@ -39,7 +40,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = await params;
+    const { id: idStr } = await params;
+    const id = parseInt(idStr);
 
     const ingredient = await prisma.ingredient.findUnique({ where: { id } });
     if (!ingredient) return NextResponse.json({ error: "Not found" }, { status: 404 });

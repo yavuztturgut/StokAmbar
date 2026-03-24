@@ -1,15 +1,10 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { X, Save, Trash2 } from "lucide-react";
-
-interface Ingredient {
-  id: string;
-  name: string;
-  unit: string;
-  currentStock: number;
-  minStockLevel: number;
-}
+import { X, Save, Trash2, AlertTriangle } from "lucide-react";
+import { Ingredient } from "@/types";
+import ConfirmModal from "./ConfirmModal";
+import toast from "react-hot-toast";
 
 interface EditStockModalProps {
   ingredient: Ingredient;
@@ -24,9 +19,11 @@ export default function EditStockModal({ ingredient, onSuccess, onClose }: EditS
     minStockLevel: ingredient.minStockLevel,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    toast.dismiss();
     setIsSubmitting(true);
 
     try {
@@ -37,8 +34,11 @@ export default function EditStockModal({ ingredient, onSuccess, onClose }: EditS
       });
 
       if (response.ok) {
+        toast.success("Malzeme güncellendi");
         onSuccess();
         onClose();
+      } else {
+        toast.error("Güncelleme sırasında bir hata oluştu");
       }
     } catch (error) {
       console.error(error);
@@ -48,8 +48,7 @@ export default function EditStockModal({ ingredient, onSuccess, onClose }: EditS
   };
 
   const handleDelete = async () => {
-    if (!confirm(`${ingredient.name} malzemesini ve tüm geçmiş hareketlerini silmek istediğinize emin misiniz?`)) return;
-
+    toast.dismiss();
     setIsSubmitting(true);
     try {
       const response = await fetch(`/api/ingredients/${ingredient.id}`, {
@@ -57,8 +56,11 @@ export default function EditStockModal({ ingredient, onSuccess, onClose }: EditS
       });
 
       if (response.ok) {
+        toast.success("Malzeme başarıyla silindi");
         onSuccess();
         onClose();
+      } else {
+        toast.error("Silme işlemi başarısız oldu");
       }
     } catch (error) {
       console.error(error);
@@ -125,14 +127,24 @@ export default function EditStockModal({ ingredient, onSuccess, onClose }: EditS
             <button
               type="button"
               disabled={isSubmitting}
-              onClick={handleDelete}
-              className="w-full px-6 py-3 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 font-bold transition-all flex items-center justify-center gap-2 border border-rose-100"
+              onClick={() => setIsDeleteModalOpen(true)}
+              className="w-full px-6 py-3 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 font-bold transition-all flex items-center justify-center gap-2 border border-rose-100 mt-2"
             >
               <Trash2 size={18} /> Malzemeyi Tamamen Sil
             </button>
           </div>
         </form>
       </div>
+
+      <ConfirmModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={handleDelete}
+        title="Malzemeyi Sil?"
+        message={`${ingredient.name} malzemesini ve buna bağlı tüm stok hareketlerini kalıcı olarak silmek istediğinize emin misiniz? Bu işlem geri alınamaz.`}
+        confirmLabel="Kalıcı Olarak Sil"
+        isDanger={true}
+      />
     </div>
   );
 }
