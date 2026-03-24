@@ -1,0 +1,40 @@
+generator client {
+  provider = "prisma-client-js"
+  binaryTargets = ["native", "windows"]
+}
+
+datasource db {
+  provider = "sqlserver"
+  url      = env("DATABASE_URL")
+}
+
+model Ingredient {
+  id            String   @id @default(uuid())
+  name          String
+  unit          String   // kg, lt, adet, paket
+  currentStock  Float    @default(0)
+  minStockLevel Float    @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  transactions  StockTransaction[]
+}
+
+model StockTransaction {
+  id           String   @id @default(uuid())
+  ingredientId String
+  type         String   // IN, OUT, WASTE
+  quantity     Float
+  note         String?
+  createdAt    DateTime @default(now())
+  ingredient   Ingredient @relation(fields: [ingredientId], references: [id])
+}
+
+model ActivityLog {
+  id             String   @id @default(uuid())
+  action         String   // CREATE, UPDATE, DELETE, IN, OUT, WASTE
+  ingredientId   String?
+  ingredientName String
+  quantity       Float?
+  details        String?
+  createdAt      DateTime @default(now())
+}
