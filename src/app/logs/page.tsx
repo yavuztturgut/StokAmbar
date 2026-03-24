@@ -1,11 +1,15 @@
 "use client";
 
 import React, { useEffect, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 import { History, Search, Filter, ChevronLeft, ChevronRight, Download, PlusCircle, PencilLine, Trash2, ShieldCheck, Donut, ClipboardPlus, SquareArrowRight } from "lucide-react";
 
 import { LogEntry } from "@/types";
 
 export default function LogsPage() {
+  const router = useRouter();
+  const { isAuthenticated, token, isLoading: authLoading } = useAuth();
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -14,7 +18,16 @@ export default function LogsPage() {
   const [search, setSearch] = useState("");
   const [actionFilter, setActionFilter] = useState("ALL");
 
+  // Auth kontrol
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      router.push("/login");
+    }
+  }, [isAuthenticated, authLoading, router]);
+
   const fetchLogs = useCallback(async () => {
+    if (!token) return;
+
     setIsLoading(true);
     try {
       const params = new URLSearchParams({
@@ -23,7 +36,11 @@ export default function LogsPage() {
         search,
         action: actionFilter,
       });
-      const response = await fetch(`/api/logs?${params.toString()}`);
+      const response = await fetch(`/api/logs?${params.toString()}`, {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+        },
+      });
       const data = await response.json();
       if (data.logs) {
         setLogs(data.logs);
@@ -35,14 +52,16 @@ export default function LogsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [page, search, actionFilter]);
+  }, [page, search, actionFilter, token]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      fetchLogs();
+      if (token) {
+        fetchLogs();
+      }
     }, 300); // Debounce search
     return () => clearTimeout(timer);
-  }, [fetchLogs]);
+  }, [fetchLogs, token]);
 
   const getActionIcon = (action: string) => {
     switch (action) {

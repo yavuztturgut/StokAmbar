@@ -1,25 +1,49 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 import { Package, AlertCircle, Plus, LayoutDashboard, Settings2, History } from "lucide-react";
 import AddStockModal from "@/components/AddStockModal";
 import MovementButtons from "@/components/MovementButtons";
 import EditStockModal from "@/components/EditStockModal";
 import ActivityLogList from "@/components/ActivityLogList";
+import toast from "react-hot-toast";
 
 import { Ingredient } from "@/types";
 
 export default function Home() {
+  const router = useRouter();
+  const { isAuthenticated, token, isLoading: authLoading } = useAuth();
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingIngredient, setEditingIngredient] = useState<Ingredient | null>(null);
   const [refreshLogsKey, setRefreshLogsKey] = useState(Date.now());
 
+  // Auth kontrol
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      router.push("/login");
+    }
+  }, [isAuthenticated, authLoading, router]);
+
   const fetchIngredients = () => {
+    if (!token) return;
+
     setIsLoading(true);
-    fetch("/api/ingredients")
-      .then((res) => res.json())
+    fetch("/api/ingredients", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+      .then((res) => {
+        if (res.status === 401) {
+          router.push("/login");
+          return [];
+        }
+        return res.json();
+      })
       .then((data) => {
         if (Array.isArray(data)) {
           setIngredients(data);
@@ -28,6 +52,7 @@ export default function Home() {
       })
       .catch((err) => {
         console.error("Fetch error:", err);
+        toast.error("Malzeme listesi yüklenemedi");
         setIsLoading(false);
       });
   };
@@ -38,8 +63,27 @@ export default function Home() {
   };
 
   useEffect(() => {
-    fetchIngredients();
-  }, []);
+    if (token) {
+      fetchIngredients();
+    }
+  }, [token]);
+
+  // Loading durumunda
+  if (authLoading || isLoading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+          <p className="text-slate-500">Yükleniyor...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Authenticate değilse gösterme
+  if (!isAuthenticated) {
+    return null;
+  }
 
   const lowStockCount = ingredients.filter(i => i.currentStock <= i.minStockLevel).length;
 

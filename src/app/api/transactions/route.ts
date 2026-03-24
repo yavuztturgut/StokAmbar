@@ -1,8 +1,15 @@
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAuth } from "@/lib/authMiddleware";
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
+    const payload = await requireAuth(req);
+
+    if (payload instanceof NextResponse) {
+      return payload;
+    }
+
     const body = await req.json();
     const { ingredientId: idRaw, type, quantity, note } = body;
     const ingredientId = parseInt(idRaw);
@@ -20,6 +27,11 @@ export async function POST(req: Request) {
 
       if (!current) {
         throw new Error("Ingredient not found");
+      }
+
+      // Check authorization
+      if (current.accountId !== payload.accountId) {
+        throw new Error("Unauthorized");
       }
 
       // Calculate new stock level
@@ -40,6 +52,7 @@ export async function POST(req: Request) {
           type,
           quantity: parseFloat(quantity),
           note,
+          accountId: payload.accountId,
         },
       });
 
@@ -59,6 +72,7 @@ export async function POST(req: Request) {
           ingredientName: updatedIngredient.name,
           quantity: parseFloat(quantity),
           details: note || `${type} işlemi yapıldı`,
+          accountId: payload.accountId,
         },
       });
 
@@ -68,6 +82,7 @@ export async function POST(req: Request) {
     return NextResponse.json(result);
   } catch (error: any) {
     console.error("Transaction Error:", error);
-    return NextResponse.json({ error: "Failed to process movement", details: error.message }, { status: 500 });
+    const statusCode = error.message === "Unauthorized" ? 403 : 500;
+    return NextResponse.json({ error: "Failed to process movement", details: error.message }, { status: statusCode });
   }
 }

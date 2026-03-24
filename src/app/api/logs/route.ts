@@ -1,8 +1,15 @@
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAuth } from "@/lib/authMiddleware";
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   try {
+    const payload = await requireAuth(req);
+
+    if (payload instanceof NextResponse) {
+      return payload;
+    }
+
     const { searchParams } = new URL(req.url);
     const limit = parseInt(searchParams.get("limit") || "20");
     const page = parseInt(searchParams.get("page") || "1");
@@ -11,7 +18,9 @@ export async function GET(req: Request) {
 
     const skip = (page - 1) * limit;
 
-    const where: any = {};
+    const where: any = {
+      accountId: payload.accountId,
+    };
     if (search) {
       where.ingredientName = { contains: search };
     }

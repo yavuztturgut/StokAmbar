@@ -1,9 +1,19 @@
 import { prisma } from "@/lib/prisma";
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
+import { requireAuth } from "@/lib/authMiddleware";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const payload = await requireAuth(request);
+
+    if (payload instanceof NextResponse) {
+      return payload;
+    }
+
     const ingredients = await prisma.ingredient.findMany({
+      where: {
+        accountId: payload.accountId,
+      },
       orderBy: { name: 'asc' }
     });
     return NextResponse.json(ingredients);
@@ -13,8 +23,14 @@ export async function GET() {
   }
 }
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
+    const payload = await requireAuth(req);
+
+    if (payload instanceof NextResponse) {
+      return payload;
+    }
+
     const body = await req.json();
     const { name, unit, minStockLevel, currentStock } = body;
 
@@ -30,6 +46,7 @@ export async function POST(req: Request) {
         unit,
         minStockLevel: parseFloat(minStockLevel) || 0,
         currentStock: parseFloat(currentStock) || 0,
+        accountId: payload.accountId,
       },
     });
 
@@ -41,6 +58,7 @@ export async function POST(req: Request) {
         ingredientName: ingredient.name,
         quantity: ingredient.currentStock,
         details: "İlk stok oluşturuldu",
+        accountId: payload.accountId,
       },
     });
 

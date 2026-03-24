@@ -1,12 +1,28 @@
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAuth } from "@/lib/authMiddleware";
 
-export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const payload = await requireAuth(req);
+
+    if (payload instanceof NextResponse) {
+      return payload;
+    }
+
     const { id: idStr } = await params;
     const id = parseInt(idStr);
     const body = await req.json();
     const { name, minStockLevel, unit } = body;
+
+    // Kaynağı check et - kullanıcı bu kaynağı kullanabilir mi?
+    const ingredient = await prisma.ingredient.findUnique({
+      where: { id },
+    });
+
+    if (!ingredient || ingredient.accountId !== payload.accountId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    }
 
     const updated = await prisma.ingredient.update({
       where: { id },
@@ -25,6 +41,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
           ingredientId: id,
           ingredientName: updated.name,
           details: `Ad: ${name}, Birim: ${unit}, Min: ${minStockLevel}`,
+          accountId: payload.accountId,
         },
       });
     } catch (e) {
@@ -38,13 +55,23 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   }
 }
 
-export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const payload = await requireAuth(req);
+
+    if (payload instanceof NextResponse) {
+      return payload;
+    }
+
     const { id: idStr } = await params;
     const id = parseInt(idStr);
 
     const ingredient = await prisma.ingredient.findUnique({ where: { id } });
+
     if (!ingredient) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    if (ingredient.accountId !== payload.accountId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    }
 
     // Activity Log - FIRST, so we have the info
     try {
@@ -54,6 +81,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
           ingredientId: null,
           ingredientName: ingredient.name,
           details: "Malzeme tamamen silindi",
+          accountId: payload.accountId,
         },
       });
     } catch (e) {

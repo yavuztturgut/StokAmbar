@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { History, ArrowRightLeft, PlusCircle, PencilLine, Trash2, ShieldCheck, Donut, ClipboardPlus, SquareArrowRight } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 
 import { LogEntry } from "@/types";
 
@@ -11,13 +12,20 @@ interface ActivityLogListProps {
 }
 
 export default function ActivityLogList({ refreshTrigger, limit }: ActivityLogListProps) {
+  const { token } = useAuth();
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchLogs = async () => {
+    if (!token) return;
+
     try {
       const url = limit ? `/api/logs?limit=${limit}` : "/api/logs";
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+        },
+      });
       const data = await response.json();
       
       // Handle both object and array response for backward compatibility
@@ -34,11 +42,13 @@ export default function ActivityLogList({ refreshTrigger, limit }: ActivityLogLi
   };
 
   useEffect(() => {
-    fetchLogs();
-    // Poll every 30 seconds for background updates
-    const interval = setInterval(fetchLogs, 30000);
-    return () => clearInterval(interval);
-  }, [refreshTrigger]);
+    if (token) {
+      fetchLogs();
+      // Poll every 30 seconds for background updates
+      const interval = setInterval(fetchLogs, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [refreshTrigger, token]);
 
   const getActionIcon = (action: string) => {
     switch (action) {
