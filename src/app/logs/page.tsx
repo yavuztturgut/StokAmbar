@@ -3,7 +3,9 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { History, Search, Filter, ChevronLeft, ChevronRight, Download, PlusCircle, PencilLine, Trash2, ShieldCheck, Donut, ClipboardPlus, SquareArrowRight } from "lucide-react";
+import { History, Search, Filter, ChevronLeft, ChevronRight, PlusCircle, PencilLine, Trash2, Donut, ClipboardPlus, SquareArrowRight, FileOutput, FileText } from "lucide-react";
+import { exportToExcel, exportToPDF } from "@/lib/exportUtils";
+import toast from "react-hot-toast";
 
 import { LogEntry } from "@/types";
 
@@ -17,6 +19,7 @@ export default function LogsPage() {
   const [totalItems, setTotalItems] = useState(0);
   const [search, setSearch] = useState("");
   const [actionFilter, setActionFilter] = useState("ALL");
+  const [isExporting, setIsExporting] = useState(false);
 
   // Auth kontrol
   useEffect(() => {
@@ -87,6 +90,63 @@ export default function LogsPage() {
     }
   };
 
+  const handleExport = async (type: 'excel' | 'pdf') => {
+    if (!token) return;
+    
+    setIsExporting(true);
+    try {
+      const params = new URLSearchParams({
+        limit: "all",
+        search,
+        action: actionFilter,
+      });
+      const response = await fetch(`/api/logs?${params.toString()}`, {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+        },
+      });
+      const data = await response.json();
+      const allLogs = data.logs;
+
+      if (type === 'excel') {
+        const exportData = allLogs.map((log: LogEntry) => ({
+          'İşlem': getActionLabel(log.action),
+          'Malzeme': log.ingredientName,
+          'Miktar': log.quantity ?? '-',
+          'Detay': log.details ?? '-',
+          'Tarih': new Date(log.createdAt).toLocaleString('tr-TR')
+        }));
+        exportToExcel(exportData, `Islem_Gecmisi_${new Date().toISOString().split('T')[0]}`);
+      } else {
+        const columns = [
+          { header: 'İşlem', dataKey: 'actionLabel' },
+          { header: 'Malzeme', dataKey: 'ingredientName' },
+          { header: 'Miktar', dataKey: 'quantity' },
+          { header: 'Detay', dataKey: 'details' },
+          { header: 'Tarih', dataKey: 'date' }
+        ];
+        const exportData = allLogs.map((log: LogEntry) => ({
+          ...log,
+          actionLabel: getActionLabel(log.action),
+          date: new Date(log.createdAt).toLocaleString('tr-TR'),
+          quantity: log.quantity ?? '-'
+        }));
+        await exportToPDF(
+          columns,
+          exportData,
+          `Islem_Gecmisi_${new Date().toISOString().split('T')[0]}`,
+          "İşlem Geçmişi Raporu"
+        );
+      }
+      toast.success(`${type === 'excel' ? 'Excel' : 'PDF'} dosyası indiriliyor...`);
+    } catch (error) {
+      console.error(error);
+      toast.error("Dosya oluşturulamadı.");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 p-8">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -101,9 +161,28 @@ export default function LogsPage() {
               <p className="text-slate-500 text-sm">Sistemdeki tüm hareketleri buradan inceleyebilirsiniz</p>
             </div>
           </div>
-          <p className="text-indigo-600 font-bold text-sm bg-indigo-50 px-4 py-2 rounded-full border border-indigo-100">
-            Toplam {totalItems} Kayıt
-          </p>
+          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+            <button
+              onClick={() => handleExport('excel')}
+              disabled={isExporting || logs.length === 0}
+              className="flex items-center gap-2 px-3 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-xl font-bold transition-all text-xs border border-emerald-100 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <FileOutput size={14} />
+              Excel
+            </button>
+            <button
+              onClick={() => handleExport('pdf')}
+              disabled={isExporting || logs.length === 0}
+              className="flex items-center gap-2 px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-xl font-bold transition-all text-xs border border-rose-100 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <FileText size={14} />
+              PDF
+            </button>
+            <div className="w-px h-6 bg-slate-200 mx-1 hidden sm:block"></div>
+            <p className="text-indigo-600 font-bold text-sm bg-indigo-50 px-4 py-2 rounded-full border border-indigo-100 whitespace-nowrap">
+              Toplam {totalItems} Kayıt
+            </p>
+          </div>
         </div>
 
         {/* Filters */}

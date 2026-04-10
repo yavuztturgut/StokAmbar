@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { Package, AlertCircle, Plus, LayoutDashboard, Settings2, History } from "lucide-react";
+import { Package, AlertCircle, Plus, Settings2, History, FileOutput, FileText } from "lucide-react";
+import { exportToExcel, exportToPDF } from "@/lib/exportUtils";
 import AddStockModal from "@/components/AddStockModal";
 import MovementButtons from "@/components/MovementButtons";
 import EditStockModal from "@/components/EditStockModal";
@@ -19,7 +20,7 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(true);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingIngredient, setEditingIngredient] = useState<Ingredient | null>(null);
-  const [refreshLogsKey, setRefreshLogsKey] = useState(Date.now());
+  const [refreshLogsKey, setRefreshLogsKey] = useState(() => Date.now());
 
   // Auth kontrol
   useEffect(() => {
@@ -28,7 +29,7 @@ export default function Home() {
     }
   }, [isAuthenticated, authLoading, router]);
 
-  const fetchIngredients = () => {
+  const fetchIngredients = useCallback(() => {
     if (!token) return;
 
     setIsLoading(true);
@@ -55,11 +56,47 @@ export default function Home() {
         toast.error("Malzeme listesi yüklenemedi");
         setIsLoading(false);
       });
-  };
+  }, [token, router]);
 
   const triggerRefresh = () => {
     fetchIngredients();
     setRefreshLogsKey(Date.now());
+  };
+
+  const handleExportExcel = () => {
+    const exportData = ingredients.map(i => ({
+      'Malzeme Adı': i.name,
+      'Birim': i.unit,
+      'Mevcut Stok': i.currentStock,
+      'Min. Stok': i.minStockLevel,
+      'Durum': i.currentStock <= i.minStockLevel ? 'Kritik' : 'Normal',
+      'Kayıt Tarihi': new Date(i.createdAt).toLocaleString('tr-TR')
+    }));
+    exportToExcel(exportData, `Stok_Durumu_${new Date().toISOString().split('T')[0]}`);
+    toast.success("Excel dosyası indiriliyor...");
+  };
+
+  const handleExportPDF = async () => {
+    const columns = [
+      { header: 'Malzeme Adı', dataKey: 'name' },
+      { header: 'Birim', dataKey: 'unit' },
+      { header: 'Mevcut Stok', dataKey: 'currentStock' },
+      { header: 'Min. Seviye', dataKey: 'minStockLevel' },
+      { header: 'Durum', dataKey: 'status' }
+    ];
+    
+    const exportData = ingredients.map(i => ({
+      ...i,
+      status: i.currentStock <= i.minStockLevel ? 'Kritik' : 'Normal'
+    }));
+
+    await exportToPDF(
+      columns,
+      exportData,
+      `Stok_Durumu_${new Date().toISOString().split('T')[0]}`,
+      "Mevcut Stok Durumu Raporu"
+    );
+    toast.success("PDF dosyası indiriliyor...");
   };
 
   useEffect(() => {
@@ -135,15 +172,34 @@ export default function Home() {
 
         {/* Stock Table */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-          <div className="p-6 border-b border-slate-50 flex justify-between items-center">
+          <div className="p-6 border-b border-slate-50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <h2 className="text-lg font-bold">Mevcut Stok Durumu</h2>
-            <button
-              onClick={() => setIsAddModalOpen(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition-all shadow-lg shadow-indigo-100 active:scale-95 text-xs"
-            >
-              <Plus size={14} />
-              Yeni Malzeme Ekle
-            </button>
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                onClick={handleExportExcel}
+                className="flex items-center gap-2 px-3 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-xl font-bold transition-all text-xs border border-emerald-100"
+                title="Excel olarak indir"
+              >
+                <FileOutput size={14} />
+                Excel
+              </button>
+              <button
+                onClick={handleExportPDF}
+                className="flex items-center gap-2 px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-xl font-bold transition-all text-xs border border-rose-100"
+                title="PDF olarak indir"
+              >
+                <FileText size={14} />
+                PDF
+              </button>
+              <div className="w-px h-6 bg-slate-200 mx-1 hidden sm:block"></div>
+              <button
+                onClick={() => setIsAddModalOpen(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition-all shadow-lg shadow-indigo-100 active:scale-95 text-xs"
+              >
+                <Plus size={14} />
+                Yeni Malzeme Ekle
+              </button>
+            </div>
           </div>
 
           <div className="overflow-x-auto">

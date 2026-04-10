@@ -11,12 +11,15 @@ export async function GET(req: NextRequest) {
     }
 
     const { searchParams } = new URL(req.url);
-    const limit = parseInt(searchParams.get("limit") || "20");
+    const limitParam = searchParams.get("limit") || "20";
+    const isAll = limitParam === "all";
+    const limit = isAll ? 0 : parseInt(limitParam);
     const page = parseInt(searchParams.get("page") || "1");
     const search = searchParams.get("search") || "";
     const action = searchParams.get("action") || "";
 
-    const skip = (page - 1) * limit;
+    const skip = isAll ? undefined : (page - 1) * limit;
+    const take = isAll ? undefined : limit;
 
     const where: any = {
       accountId: payload.accountId,
@@ -33,7 +36,7 @@ export async function GET(req: NextRequest) {
         where,
         orderBy: { createdAt: "desc" },
         skip,
-        take: limit,
+        take,
       }),
       prisma.activityLog.count({ where }),
     ]);
