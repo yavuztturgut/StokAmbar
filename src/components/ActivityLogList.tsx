@@ -27,7 +27,7 @@ export default function ActivityLogList({ refreshTrigger, limit }: ActivityLogLi
         },
       });
       const data = await response.json();
-      
+
       // Handle both object and array response for backward compatibility
       if (Array.isArray(data)) {
         setLogs(data);
@@ -82,7 +82,7 @@ export default function ActivityLogList({ refreshTrigger, limit }: ActivityLogLi
         <History size={20} className="text-indigo-600" />
         <h2 className="text-lg font-bold text-slate-800">Son İşlem Hareketleri</h2>
       </div>
-      
+
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-slate-50 text-slate-500 font-bold uppercase text-[10px] tracking-widest">

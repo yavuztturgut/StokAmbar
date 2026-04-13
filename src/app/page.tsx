@@ -3,12 +3,14 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { Package, AlertCircle, Plus, Settings2, History, FileOutput, FileText } from "lucide-react";
+import { Plus, Settings2, History, FileOutput, FileText, LayoutDashboard } from "lucide-react";
 import { exportToExcel, exportToPDF } from "@/lib/exportUtils";
 import AddStockModal from "@/components/AddStockModal";
 import MovementButtons from "@/components/MovementButtons";
 import EditStockModal from "@/components/EditStockModal";
 import ActivityLogList from "@/components/ActivityLogList";
+import MetricCards from "@/components/MetricCards";
+import DashboardCharts from "@/components/DashboardCharts";
 import toast from "react-hot-toast";
 
 import { Ingredient } from "@/types";
@@ -17,22 +19,15 @@ export default function Home() {
   const router = useRouter();
   const { isAuthenticated, token, isLoading: authLoading } = useAuth();
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
+  const [analytics, setAnalytics] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingIngredient, setEditingIngredient] = useState<Ingredient | null>(null);
   const [refreshLogsKey, setRefreshLogsKey] = useState(() => Date.now());
 
-  // Auth kontrol
-  useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
-      router.push("/login");
-    }
-  }, [isAuthenticated, authLoading, router]);
-
   const fetchIngredients = useCallback(() => {
     if (!token) return;
 
-    setIsLoading(true);
     fetch("/api/ingredients", {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -49,17 +44,51 @@ export default function Home() {
         if (Array.isArray(data)) {
           setIngredients(data);
         }
-        setIsLoading(false);
       })
       .catch((err) => {
-        console.error("Fetch error:", err);
-        toast.error("Malzeme listesi yüklenemedi");
-        setIsLoading(false);
+        console.error("Fetch ingredients error:", err);
       });
   }, [token, router]);
 
+  const fetchAnalytics = useCallback(() => {
+    if (!token) return;
+
+    fetch("/api/analytics", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (!data.error) {
+          setAnalytics(data);
+        }
+      })
+      .catch((err) => {
+        console.error("Fetch analytics error:", err);
+      });
+  }, [token]);
+
+  const loadData = useCallback(() => {
+    setIsLoading(true);
+    Promise.all([fetchIngredients(), fetchAnalytics()])
+      .finally(() => setIsLoading(false));
+  }, [fetchIngredients, fetchAnalytics]);
+
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      router.push("/login");
+    }
+  }, [isAuthenticated, authLoading, router]);
+
+  useEffect(() => {
+    if (token) {
+      loadData();
+    }
+  }, [token, loadData]);
+
   const triggerRefresh = () => {
-    fetchIngredients();
+    loadData();
     setRefreshLogsKey(Date.now());
   };
 
@@ -70,7 +99,7 @@ export default function Home() {
       'Mevcut Stok': i.currentStock,
       'Min. Stok': i.minStockLevel,
       'Durum': i.currentStock <= i.minStockLevel ? 'Kritik' : 'Normal',
-      'Kayıt Tarihi': new Date(i.createdAt).toLocaleString('tr-TR')
+      'Kayıt Tarihi': new Date().toLocaleString('tr-TR')
     }));
     exportToExcel(exportData, `Stok_Durumu_${new Date().toISOString().split('T')[0]}`);
     toast.success("Excel dosyası indiriliyor...");
@@ -84,7 +113,7 @@ export default function Home() {
       { header: 'Min. Seviye', dataKey: 'minStockLevel' },
       { header: 'Durum', dataKey: 'status' }
     ];
-    
+
     const exportData = ingredients.map(i => ({
       ...i,
       status: i.currentStock <= i.minStockLevel ? 'Kritik' : 'Normal'
@@ -99,33 +128,21 @@ export default function Home() {
     toast.success("PDF dosyası indiriliyor...");
   };
 
-  useEffect(() => {
-    if (token) {
-      fetchIngredients();
-    }
-  }, [token]);
-
-  // Loading durumunda
   if (authLoading || isLoading) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-          <p className="text-slate-500">Yükleniyor...</p>
+          <p className="text-slate-500 font-medium">Dashboard Hazırlanıyor...</p>
         </div>
       </div>
     );
   }
 
-  // Authenticate değilse gösterme
-  if (!isAuthenticated) {
-    return null;
-  }
-
-  const lowStockCount = ingredients.filter(i => i.currentStock <= i.minStockLevel).length;
+  if (!isAuthenticated) return null;
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans">
+    <div className="min-h-screen bg-[#fcfdff] text-slate-900 font-sans selection:bg-indigo-100 selection:text-indigo-900">
       {/* Modals */}
       {isAddModalOpen && (
         <AddStockModal
@@ -142,142 +159,147 @@ export default function Home() {
         />
       )}
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto p-8">
-        {/* Stats Grid */}
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-          <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
-            <div className="bg-blue-50 p-3 rounded-xl text-blue-600">
-              <Package size={24} />
+      <main className="max-w-7xl mx-auto p-6 lg:p-10">
+        {/* Header */}
+        <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div>
+            <div className="flex items-center gap-2 text-indigo-600 mb-2">
+              <LayoutDashboard size={18} />
+              <span className="text-sm font-bold tracking-wider uppercase">Genel Bakış</span>
             </div>
-            <div>
-              <p className="text-slate-500 text-[11px] font-bold uppercase tracking-wider">Toplam Kalem</p>
-              <p className="text-2xl font-black text-slate-800">{ingredients.length}</p>
-            </div>
+            <h1 className="text-3xl font-black tracking-tight text-slate-800">Hoş Geldiniz!</h1>
+            <p className="text-slate-500 mt-1">Stoklarınızın ve tüketim verilerinizin gerçek zamanlı özeti.</p>
           </div>
 
-          <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4">
-            <div className={`p-3 rounded-xl ${lowStockCount > 0 ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-600'}`}>
-              <AlertCircle size={24} />
-            </div>
-            <div>
-              <p className="text-slate-500 text-[11px] font-bold uppercase tracking-wider">Kritik Stok</p>
-              <p className={`text-2xl font-black ${lowStockCount > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
-                {lowStockCount}
-              </p>
-            </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleExportExcel}
+              className="flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-emerald-50 text-emerald-700 rounded-2xl font-bold transition-all text-sm border border-slate-100 shadow-sm"
+            >
+              <FileOutput size={16} />
+              Excel
+            </button>
+            <button
+              onClick={handleExportPDF}
+              className="flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-rose-50 text-rose-700 rounded-2xl font-bold transition-all text-sm border border-slate-100 shadow-sm"
+            >
+              <FileText size={16} />
+              PDF
+            </button>
+            <button
+              onClick={() => setIsAddModalOpen(true)}
+              className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold transition-all shadow-lg shadow-indigo-100 active:scale-95 text-sm"
+            >
+              <Plus size={18} />
+              Yeni Ekle
+            </button>
           </div>
         </div>
 
-        {/* Stock Table */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-          <div className="p-6 border-b border-slate-50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <h2 className="text-lg font-bold">Mevcut Stok Durumu</h2>
-            <div className="flex items-center gap-2 flex-wrap">
-              <button
-                onClick={handleExportExcel}
-                className="flex items-center gap-2 px-3 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-xl font-bold transition-all text-xs border border-emerald-100"
-                title="Excel olarak indir"
-              >
-                <FileOutput size={14} />
-                Excel
-              </button>
-              <button
-                onClick={handleExportPDF}
-                className="flex items-center gap-2 px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-xl font-bold transition-all text-xs border border-rose-100"
-                title="PDF olarak indir"
-              >
-                <FileText size={14} />
-                PDF
-              </button>
-              <div className="w-px h-6 bg-slate-200 mx-1 hidden sm:block"></div>
-              <button
-                onClick={() => setIsAddModalOpen(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition-all shadow-lg shadow-indigo-100 active:scale-95 text-xs"
-              >
-                <Plus size={14} />
-                Yeni Malzeme Ekle
-              </button>
-            </div>
-          </div>
+        {/* Metrics Section */}
+        {analytics && <MetricCards data={analytics.summary} />}
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-slate-50 text-slate-500 text-xs font-bold uppercase tracking-widest">
-                  <th className="px-6 py-4">Malzeme Adı</th>
-                  <th className="px-6 py-4">Birim</th>
-                  <th className="px-6 py-4">Mevcut Stok</th>
-                  <th className="px-6 py-4">Min. Seviye</th>
-                  <th className="px-6 py-4">Durum</th>
-                  <th className="px-6 py-4 text-right">İşlemler</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50">
-                {isLoading ? (
-                  <tr>
-                    <td colSpan={6} className="px-6 py-20 text-center text-slate-400 italic">
-                      Yükleniyor...
-                    </td>
+        {/* Charts Section */}
+        {analytics && (
+          <DashboardCharts
+            trendData={analytics.trend}
+            distributionData={analytics.distribution}
+          />
+        )}
+
+        {/* Table Area (Full Width) */}
+        <div className="space-y-12">
+          {/* Inventory Table */}
+          <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+            <div className="px-8 py-6 border-b border-slate-50 flex justify-between items-center">
+              <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                 Envanter Listesi
+                 <span className="bg-slate-100 text-slate-500 text-[10px] px-2 py-0.5 rounded-full uppercase tracking-tighter">
+                   {ingredients.length} KALEM
+                 </span>
+              </h2>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-50/50 text-slate-500 text-[11px] font-bold uppercase tracking-widest">
+                    <th className="px-8 py-4">Malzeme</th>
+                    <th className="px-8 py-4">Mevcut</th>
+                    <th className="px-8 py-4">Durum</th>
+                    <th className="px-8 py-4 text-right">Düzenle</th>
                   </tr>
-                ) : ingredients.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="px-6 py-20 text-center text-slate-400 italic">
-                      Henüz malzeme eklenmemiş.
-                    </td>
-                  </tr>
-                ) : (
-                  ingredients.map((item) => (
-                    <tr key={item.id} className="hover:bg-slate-50/50 transition-colors group">
-                      <td className="px-6 py-4 font-semibold text-slate-700">{item.name}</td>
-                      <td className="px-6 py-4 text-slate-500">{item.unit}</td>
-                      <td className="px-6 py-4">
-                        <span className="font-mono font-bold text-slate-600">{item.currentStock}</span>
-                      </td>
-                      <td className="px-6 py-4 text-slate-400">{item.minStockLevel}</td>
-                      <td className="px-6 py-4">
-                        {item.currentStock <= item.minStockLevel ? (
-                          <span className="px-3 py-1 bg-rose-50 text-rose-600 rounded-full text-xs font-bold flex items-center gap-1 w-fit border border-rose-100">
-                            <AlertCircle size={12} /> Kritik
-                          </span>
-                        ) : (
-                          <span className="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full text-xs font-bold flex items-center gap-1 w-fit border border-emerald-100">
-                            Normal
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex items-center justify-end gap-3">
-                          <MovementButtons
-                            ingredientId={item.id}
-                            currentStock={item.currentStock}
-                            onSuccess={triggerRefresh}
-                          />
-                          <button
-                            onClick={() => setEditingIngredient(item)}
-                            className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
-                            title="Düzenle / Sil"
-                          >
-                            <Settings2 size={18} />
-                          </button>
-                        </div>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  {ingredients.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} className="px-8 py-20 text-center text-slate-400 italic">
+                        Henüz veri girilmemiş.
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                  ) : (
+                    ingredients.map((item) => (
+                      <tr key={item.id} className="hover:bg-slate-50/30 transition-colors group">
+                        <td className="px-8 py-5">
+                          <div>
+                            <p className="font-bold text-slate-700">{item.name}</p>
+                            <p className="text-[10px] font-bold text-slate-400 tracking-wider">BİRİM: {item.unit.toUpperCase()}</p>
+                          </div>
+                        </td>
+                        <td className="px-8 py-5">
+                          <span className="font-mono font-black text-lg text-slate-600">{item.currentStock}</span>
+                        </td>
+                        <td className="px-8 py-5">
+                          {item.currentStock <= item.minStockLevel ? (
+                            <span className="inline-flex items-center px-3 py-1 bg-rose-50 text-rose-600 rounded-full text-[10px] font-black uppercase tracking-wider border border-rose-100">
+                              Kritik
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full text-[10px] font-black uppercase tracking-wider border border-emerald-100">
+                              Normal
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-8 py-5 text-right">
+                          <div className="flex items-center justify-end gap-3">
+                            <MovementButtons
+                              ingredientId={item.id}
+                              currentStock={item.currentStock}
+                              onSuccess={triggerRefresh}
+                            />
+                            <button
+                              onClick={() => setEditingIngredient(item)}
+                              className="p-2.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all border border-transparent hover:border-indigo-100"
+                            >
+                              <Settings2 size={18} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
 
-        {/* Activity Log Summary */}
-        <div className="mt-12">
-          <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
-            <History size={20} className="text-indigo-600" />
-            Son İşlemler Özeti
-          </h2>
-          <ActivityLogList refreshTrigger={refreshLogsKey} limit={5} />
+          {/* Activity Logs (Full Width Below) */}
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                <History size={20} className="text-indigo-600" />
+                Son İşlem Hareketleri
+              </h2>
+              <button 
+                onClick={() => router.push('/logs')}
+                className="text-xs font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1 transition-colors tracking-tighter"
+              >
+                Tümünü Gör <LayoutDashboard size={14} />
+              </button>
+            </div>
+            
+            <ActivityLogList refreshTrigger={refreshLogsKey} limit={10} variant="full" />
+          </div>
         </div>
       </main>
     </div>

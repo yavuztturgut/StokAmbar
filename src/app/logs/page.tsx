@@ -35,7 +35,7 @@ export default function LogsPage() {
     try {
       const params = new URLSearchParams({
         page: page.toString(),
-        limit: "15",
+        limit: "10",
         search,
         action: actionFilter,
       });
@@ -274,20 +274,22 @@ export default function LogsPage() {
           <div className="text-sm text-slate-500">
             Sayfa <span className="font-bold text-slate-700">{page}</span> / {totalPages}
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-3">
             <button
               onClick={() => setPage(p => Math.max(1, p - 1))}
               disabled={page === 1 || isLoading}
-              className="p-2 border border-slate-100 rounded-lg hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+              className="p-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-100 disabled:opacity-20 disabled:cursor-not-allowed transition-all shadow-sm active:scale-95"
+              title="Önceki Sayfa"
             >
-              <ChevronLeft size={20} />
+              <ChevronLeft size={20} strokeWidth={2.5} />
             </button>
             <button
               onClick={() => setPage(p => Math.min(totalPages, p + 1))}
               disabled={page === totalPages || isLoading}
-              className="p-2 border border-slate-100 rounded-lg hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+              className="p-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-100 disabled:opacity-20 disabled:cursor-not-allowed transition-all shadow-sm active:scale-95"
+              title="Sonraki Sayfa"
             >
-              <ChevronRight size={20} />
+              <ChevronRight size={20} strokeWidth={2.5} />
             </button>
           </div>
         </div>
