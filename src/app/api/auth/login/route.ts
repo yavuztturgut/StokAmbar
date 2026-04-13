@@ -5,12 +5,12 @@ import { verifyPassword, generateToken } from '@/lib/auth';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, password } = body;
+    const { email, password, rememberMe } = body;
 
     // Validasyon
     if (!email || !password) {
       return NextResponse.json(
-        { error: 'Email ve password gereklidir' },
+        { error: 'Email ve şifre gereklidir' },
         { status: 400 }
       );
     }
@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
 
     if (!user) {
       return NextResponse.json(
-        { error: 'Geçersiz email veya password' },
+        { error: 'Geçersiz email veya şifre' },
         { status: 401 }
       );
     }
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
 
     if (!isPasswordValid) {
       return NextResponse.json(
-        { error: 'Geçersiz email veya password' },
+        { error: 'Geçersiz email veya şifre' },
         { status: 401 }
       );
     }
@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
       userId: user.id,
       accountId: user.accountId,
       email: user.email,
-    });
+    }, rememberMe ? '30d' : '1d');
 
     return NextResponse.json({
       success: true,
@@ -70,4 +70,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-
