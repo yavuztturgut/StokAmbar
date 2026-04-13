@@ -80,7 +80,17 @@ export default function EditStockModal({ ingredient, onSuccess, onClose }: EditS
   return (
     <div 
       className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-modal-overlay"
-      onClick={onClose}
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) {
+          (e.currentTarget as any)._mouseDownTarget = true;
+        }
+      }}
+      onMouseUp={(e) => {
+        if (e.target === e.currentTarget && (e.currentTarget as any)._mouseDownTarget) {
+          onClose();
+        }
+        (e.currentTarget as any)._mouseDownTarget = false;
+      }}
     >
       <div 
         className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-modal-content"
