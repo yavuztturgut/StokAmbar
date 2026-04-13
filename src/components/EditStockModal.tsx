@@ -78,7 +78,7 @@ export default function EditStockModal({ ingredient, onSuccess, onClose }: EditS
   };
 
   return (
-    <div 
+    <div
       className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-modal-overlay"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) {
@@ -92,7 +92,7 @@ export default function EditStockModal({ ingredient, onSuccess, onClose }: EditS
         (e.currentTarget as any)._mouseDownTarget = false;
       }}
     >
-      <div 
+      <div
         className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-modal-content"
         onClick={(e) => e.stopPropagation()}
       >

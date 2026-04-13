@@ -213,10 +213,10 @@ export default function Home() {
           <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
             <div className="px-8 py-6 border-b border-slate-50 flex justify-between items-center">
               <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                 Envanter Listesi
-                 <span className="bg-slate-100 text-slate-500 text-[10px] px-2 py-0.5 rounded-full uppercase tracking-tighter">
-                   {ingredients.length} KALEM
-                 </span>
+                Envanter Listesi
+                <span className="bg-slate-100 text-slate-500 text-[10px] px-2 py-0.5 rounded-full uppercase tracking-tighter">
+                  {ingredients.length} KALEM
+                </span>
               </h2>
             </div>
 
@@ -290,15 +290,15 @@ export default function Home() {
                 <History size={20} className="text-indigo-600" />
                 Son İşlem Hareketleri
               </h2>
-              <button 
+              <button
                 onClick={() => router.push('/logs')}
                 className="text-xs font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1 transition-colors tracking-tighter"
               >
                 Tümünü Gör <LayoutDashboard size={14} />
               </button>
             </div>
-            
-            <ActivityLogList refreshTrigger={refreshLogsKey} limit={10} variant="full" />
+
+            <ActivityLogList refreshTrigger={refreshLogsKey} limit={10} />
           </div>
         </div>
       </main>

@@ -92,7 +92,7 @@ export default function LogsPage() {
 
   const handleExport = async (type: 'excel' | 'pdf') => {
     if (!token) return;
-    
+
     setIsExporting(true);
     try {
       const params = new URLSearchParams({
@@ -197,7 +197,7 @@ export default function LogsPage() {
               onChange={(e) => { setSearch(e.target.value); setPage(1); }}
             />
           </div>
-          
+
           <div className="flex items-center gap-2 w-full md:w-auto">
             <Filter size={18} className="text-slate-500" />
             <select

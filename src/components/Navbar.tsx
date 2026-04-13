@@ -102,15 +102,13 @@ export default function Navbar() {
               <Link
                 key={link.href}
                 href={link.href}
-                className={`relative py-1 text-sm font-semibold transition-colors ${
-                  isActive ? "text-indigo-600" : "text-slate-500 hover:text-slate-800"
-                }`}
+                className={`relative py-1 text-sm font-semibold transition-colors ${isActive ? "text-indigo-600" : "text-slate-500 hover:text-slate-800"
+                  }`}
               >
                 {link.name}
                 <span
-                  className={`absolute bottom-0 left-1/2 h-0.5 bg-indigo-600 transition-all duration-300 ${
-                    isActive ? "w-full -translate-x-1/2" : "w-0"
-                  }`}
+                  className={`absolute bottom-0 left-1/2 h-0.5 bg-indigo-600 transition-all duration-300 ${isActive ? "w-full -translate-x-1/2" : "w-0"
+                    }`}
                 />
               </Link>
             );

@@ -18,7 +18,7 @@ export const verifyPassword = async (password: string, hashedPassword: string): 
 };
 
 export const generateToken = (payload: TokenPayload, expiresIn: string = '7d'): string => {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn });
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: expiresIn as any });
 };
 
 export const verifyToken = (token: string): TokenPayload | null => {

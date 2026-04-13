@@ -41,9 +41,8 @@ export default function ConfirmModal({
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex items-center justify-center p-4 transition-all duration-300 ease-out ${
-        isOpen ? "bg-slate-900/60 backdrop-blur-sm opacity-100" : "bg-transparent opacity-0 pointer-events-none"
-      }`}
+      className={`fixed inset-0 z-50 flex items-center justify-center p-4 transition-all duration-300 ease-out ${isOpen ? "bg-slate-900/60 backdrop-blur-sm opacity-100" : "bg-transparent opacity-0 pointer-events-none"
+        }`}
       onClick={(e) => {
         // Fallback for click if mousedown/mouseup logic is bypassed by some reason, 
         // but it's mainly handled by mousedown/mouseup now.
@@ -64,9 +63,8 @@ export default function ConfirmModal({
       }}
     >
       <div
-        className={`bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all duration-300 ease-out border border-slate-100 ${
-          isOpen ? "scale-100 translate-y-0" : "scale-95 translate-y-4"
-        }`}
+        className={`bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all duration-300 ease-out border border-slate-100 ${isOpen ? "scale-100 translate-y-0" : "scale-95 translate-y-4"
+          }`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -101,11 +99,10 @@ export default function ConfirmModal({
               onConfirm();
               onClose();
             }}
-            className={`flex-1 px-4 py-3 text-white font-bold rounded-2xl transition-all active:scale-95 shadow-lg ${
-              isDanger
+            className={`flex-1 px-4 py-3 text-white font-bold rounded-2xl transition-all active:scale-95 shadow-lg ${isDanger
                 ? "bg-rose-600 hover:bg-rose-700 shadow-rose-200"
                 : "bg-indigo-600 hover:bg-indigo-700 shadow-indigo-200"
-            }`}
+              }`}
           >
             {confirmLabel}
           </button>

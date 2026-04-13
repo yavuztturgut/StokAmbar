@@ -39,19 +39,19 @@ export default function DashboardCharts({ trendData, distributionData }: ChartPr
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-              <XAxis 
-                dataKey="date" 
-                axisLine={false} 
-                tickLine={false} 
+              <XAxis
+                dataKey="date"
+                axisLine={false}
+                tickLine={false}
                 tick={{ fontSize: 10, fill: '#64748b' }}
                 dy={10}
               />
-              <YAxis 
-                axisLine={false} 
-                tickLine={false} 
+              <YAxis
+                axisLine={false}
+                tickLine={false}
                 tick={{ fontSize: 10, fill: '#64748b' }}
               />
-              <Tooltip 
+              <Tooltip
                 contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
               />
               <Area
@@ -78,36 +78,36 @@ export default function DashboardCharts({ trendData, distributionData }: ChartPr
             <BarChart data={distributionData} layout="vertical" margin={{ left: 20 }}>
               <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
               <XAxis type="number" hide />
-              <YAxis 
-                dataKey="name" 
-                type="category" 
-                axisLine={false} 
-                tickLine={false} 
+              <YAxis
+                dataKey="name"
+                type="category"
+                axisLine={false}
+                tickLine={false}
                 tick={{ fontSize: 10, fill: '#64748b' }}
                 width={80}
               />
-              <Tooltip 
+              <Tooltip
                 cursor={{ fill: '#f8fafc' }}
                 contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
               />
               <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px', fontSize: '10px' }} />
-              <Bar 
-                dataKey="current" 
-                name="Mevcut Stok" 
-                fill="#4f46e5" 
-                radius={[0, 4, 4, 0]} 
+              <Bar
+                dataKey="current"
+                name="Mevcut Stok"
+                fill="#4f46e5"
+                radius={[0, 4, 4, 0]}
                 barSize={12}
               >
                 {distributionData.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={entry.current <= entry.min ? '#e11d48' : '#4f46e5'} />
                 ))}
               </Bar>
-              <Bar 
-                dataKey="min" 
-                name="Min. Seviye" 
-                fill="#e2e8f0" 
-                radius={[0, 4, 4, 0]} 
-                barSize={12} 
+              <Bar
+                dataKey="min"
+                name="Min. Seviye"
+                fill="#e2e8f0"
+                radius={[0, 4, 4, 0]}
+                barSize={12}
               />
             </BarChart>
           </ResponsiveContainer>
