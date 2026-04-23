@@ -84,11 +84,13 @@ export async function POST(request: NextRequest) {
         email: user.email,
         username: user.username,
         accountId: account.id,
+        createdAt: user.createdAt,
       },
       account: {
         id: account.id,
         name: account.name,
         email: account.email,
+        createdAt: account.createdAt,
       },
     });
   } catch (error) {

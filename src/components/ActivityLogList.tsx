@@ -118,7 +118,7 @@ export default function ActivityLogList({ refreshTrigger, limit }: ActivityLogLi
                   </td>
                   <td className="px-6 py-4 text-slate-400 italic text-xs">{log.details}</td>
                   <td className="px-6 py-4 text-right text-slate-400 text-xs">
-                    {new Date(log.createdAt).toLocaleString("tr-TR")}
+                    {log.createdAt ? new Date(log.createdAt).toLocaleString("tr-TR") : "-"}
                   </td>
                 </tr>
               ))

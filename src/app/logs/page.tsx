@@ -114,7 +114,7 @@ export default function LogsPage() {
           'Malzeme': log.ingredientName,
           'Miktar': log.quantity ?? '-',
           'Detay': log.details ?? '-',
-          'Tarih': new Date(log.createdAt).toLocaleString('tr-TR')
+          'Tarih': log.createdAt ? new Date(log.createdAt).toLocaleString('tr-TR') : '-'
         }));
         exportToExcel(exportData, `Islem_Gecmisi_${new Date().toISOString().split('T')[0]}`);
       } else {
@@ -128,7 +128,7 @@ export default function LogsPage() {
         const exportData = allLogs.map((log: LogEntry) => ({
           ...log,
           actionLabel: getActionLabel(log.action),
-          date: new Date(log.createdAt).toLocaleString('tr-TR'),
+          date: log.createdAt ? new Date(log.createdAt).toLocaleString('tr-TR') : '-',
           quantity: log.quantity ?? '-'
         }));
         await exportToPDF(
@@ -259,7 +259,7 @@ export default function LogsPage() {
                       </td>
                       <td className="px-6 py-4 text-slate-400 italic text-xs">{log.details}</td>
                       <td className="px-6 py-4 text-right text-slate-400 text-xs">
-                        {new Date(log.createdAt).toLocaleString("tr-TR")}
+                        {log.createdAt ? new Date(log.createdAt).toLocaleString("tr-TR") : "-"}
                       </td>
                     </tr>
                   ))

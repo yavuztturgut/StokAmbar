@@ -120,7 +120,7 @@ export default function ProfilePage() {
                 </label>
                 <div className="px-4 py-3 bg-slate-50 border border-slate-100 rounded-lg text-slate-700 font-semibold flex items-center gap-2">
                   <Calendar size={16} className="text-slate-400" />
-                  {new Date(user.createdAt).toLocaleDateString('tr-TR')}
+                  {user.createdAt ? new Date(user.createdAt).toLocaleDateString('tr-TR') : '-'}
                 </div>
               </div>
             </div>
@@ -189,7 +189,7 @@ export default function ProfilePage() {
                     </label>
                     <div className="px-4 py-3 bg-slate-50 border border-slate-100 rounded-lg text-slate-700 font-semibold flex items-center gap-2">
                       <Calendar size={16} className="text-slate-400" />
-                      {new Date(account.createdAt).toLocaleDateString('tr-TR')}
+                      {account.createdAt ? new Date(account.createdAt).toLocaleDateString('tr-TR') : '-'}
                     </div>
                   </div>
                 </>
