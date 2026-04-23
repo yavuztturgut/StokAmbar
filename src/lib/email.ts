@@ -61,3 +61,38 @@ export async function sendLowStockEmail(
     console.error('E-posta gönderim hatası:', error);
   }
 }
+
+export async function sendCustomEmail(to: string, subject: string, message: string) {
+  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+    console.warn('E-posta gönderilemedi: SMTP yapılandırması eksik.');
+    return;
+  }
+
+  const mailOptions = {
+    from: process.env.SMTP_FROM || `"StokAmbar" <${process.env.SMTP_USER}>`,
+    to,
+    subject,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
+        <div style="background-color: #3b82f6; color: white; padding: 20px; text-align: center;">
+          <h2 style="margin: 0;">${subject}</h2>
+        </div>
+        <div style="padding: 20px; background-color: #ffffff;">
+          <p style="font-size: 16px; color: #333; line-height: 1.5;">${message}</p>
+        </div>
+        <div style="background-color: #f3f4f6; color: #6b7280; text-align: center; padding: 15px; font-size: 12px;">
+          <p style="margin: 0;">Bu e-posta StokAmbar sistemi tarafından otomatik olarak gönderilmiştir.</p>
+        </div>
+      </div>
+    `,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log(`E-posta başarıyla gönderildi: ${to}`);
+    return { success: true };
+  } catch (error) {
+    console.error('E-posta gönderim hatası:', error);
+    return { success: false, error };
+  }
+}

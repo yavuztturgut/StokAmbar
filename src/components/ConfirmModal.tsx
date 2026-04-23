@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { AlertTriangle, X } from "lucide-react";
 
 interface ConfirmModalProps {
@@ -25,14 +25,15 @@ export default function ConfirmModal({
   isDanger = true,
 }: ConfirmModalProps) {
   const [isRendered, setIsRendered] = useState(false);
+  const mouseDownTargetRef = useRef(false);
 
   useEffect(() => {
     if (isOpen) {
       setIsRendered(true);
       document.body.style.overflow = "hidden";
     } else {
-      const timer = setTimeout(() => setIsRendered(false), 300);
       document.body.style.overflow = "auto";
+      const timer = setTimeout(() => setIsRendered(false), 300);
       return () => clearTimeout(timer);
     }
   }, [isOpen]);
@@ -43,23 +44,16 @@ export default function ConfirmModal({
     <div
       className={`fixed inset-0 z-50 flex items-center justify-center p-4 transition-all duration-300 ease-out ${isOpen ? "bg-slate-900/60 backdrop-blur-sm opacity-100" : "bg-transparent opacity-0 pointer-events-none"
         }`}
-      onClick={(e) => {
-        // Fallback for click if mousedown/mouseup logic is bypassed by some reason, 
-        // but it's mainly handled by mousedown/mouseup now.
-        if (e.target === e.currentTarget && (e.currentTarget as any)._mouseDownTarget) {
-          onClose();
-        }
-      }}
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) {
-          (e.currentTarget as any)._mouseDownTarget = true;
+          mouseDownTargetRef.current = true;
         }
       }}
       onMouseUp={(e) => {
-        if (e.target === e.currentTarget && (e.currentTarget as any)._mouseDownTarget) {
+        if (e.target === e.currentTarget && mouseDownTargetRef.current) {
           onClose();
         }
-        (e.currentTarget as any)._mouseDownTarget = false;
+        mouseDownTargetRef.current = false;
       }}
     >
       <div

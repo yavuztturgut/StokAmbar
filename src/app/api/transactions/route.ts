@@ -111,9 +111,10 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json(result);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Transaction Error:", error);
-    const statusCode = error.message === "Unauthorized" ? 403 : 500;
-    return NextResponse.json({ error: "Failed to process movement", details: error.message }, { status: statusCode });
+    const message = error instanceof Error ? error.message : "Internal Server Error";
+    const statusCode = message === "Unauthorized" ? 403 : 500;
+    return NextResponse.json({ error: "Failed to process movement", details: message }, { status: statusCode });
   }
 }

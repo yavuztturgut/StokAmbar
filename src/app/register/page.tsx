@@ -83,8 +83,9 @@ export default function RegisterPage() {
 
       toast.success('Kayıt başarılı! Hoş geldiniz');
       router.push('/');
-    } catch (error: any) {
-      toast.error(error.message || 'Kayıt başarısız');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Kayıt başarısız';
+      toast.error(message);
     } finally {
       setIsLoading(false);
     }

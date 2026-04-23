@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { LogIn, Package, ShieldCheck, Zap, ArrowRight, Eye, EyeOff } from 'lucide-react';
+import { Package, ShieldCheck, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -47,8 +47,9 @@ export default function LoginPage() {
       await login(email, password, rememberMe);
       toast.success('Giriş başarılı! Hoş geldiniz.');
       router.push('/');
-    } catch (error: any) {
-      toast.error(error.message || 'Giriş yapılamadı, lütfen bilgilerinizi kontrol edin.');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Giriş yapılamadı, lütfen bilgilerinizi kontrol edin.';
+      toast.error(message);
     } finally {
       setIsLoading(false);
     }

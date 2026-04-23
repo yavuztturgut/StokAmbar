@@ -40,3 +40,31 @@ export interface AuthResponse {
   account: Account;
 }
 
+export interface TrendData {
+  date: string;
+  amount: number;
+}
+
+export interface TopMovingItem {
+  name: string;
+  amount: number;
+  unit: string;
+}
+
+export interface DistributionData {
+  name: string;
+  current: number;
+  min: number;
+}
+
+export interface AnalyticsData {
+  summary: {
+    totalItems: number;
+    criticalCount: number;
+    normalCount: number;
+    topMovingItem: string;
+  };
+  trend: TrendData[];
+  topMoving: TopMovingItem[];
+  distribution: DistributionData[];
+}

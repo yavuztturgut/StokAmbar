@@ -13,13 +13,13 @@ import MetricCards from "@/components/MetricCards";
 import DashboardCharts from "@/components/DashboardCharts";
 import toast from "react-hot-toast";
 
-import { Ingredient } from "@/types";
+import { Ingredient, AnalyticsData } from "@/types";
 
 export default function Home() {
   const router = useRouter();
   const { isAuthenticated, token, isLoading: authLoading } = useAuth();
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
-  const [analytics, setAnalytics] = useState<any>(null);
+  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingIngredient, setEditingIngredient] = useState<Ingredient | null>(null);
@@ -85,7 +85,9 @@ export default function Home() {
     if (token) {
       loadData();
     }
-  }, [token, loadData]);
+    // We only want to load data when token changes or on initial mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]);
 
   const triggerRefresh = () => {
     loadData();

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { Plus, Minus, Trash2, Check, X, Donut, ClipboardPlus, SquareArrowRight } from "lucide-react";
+import { Check, X, Donut, ClipboardPlus, SquareArrowRight } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import toast from "react-hot-toast";
 
