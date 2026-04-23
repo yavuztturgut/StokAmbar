@@ -63,12 +63,11 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json(ingredient);
-  } catch (error) {
+  } catch (error: any) {
     console.error("POST Ingredient Error Detailed:", error);
-    const message = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json({ 
       error: "Failed to create ingredient", 
-      details: message 
+      details: error.message || "Unknown error" 
     }, { status: 500 });
   }
 }

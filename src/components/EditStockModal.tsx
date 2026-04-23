@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useRef } from "react";
-import { X, Save, Trash2 } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { X, Save, Trash2, AlertTriangle } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { Ingredient } from "@/types";
 import ConfirmModal from "./ConfirmModal";
@@ -22,7 +22,6 @@ export default function EditStockModal({ ingredient, onSuccess, onClose }: EditS
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const mouseDownTargetRef = useRef(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,14 +82,14 @@ export default function EditStockModal({ ingredient, onSuccess, onClose }: EditS
       className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-modal-overlay"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) {
-          mouseDownTargetRef.current = true;
+          (e.currentTarget as any)._mouseDownTarget = true;
         }
       }}
       onMouseUp={(e) => {
-        if (e.target === e.currentTarget && mouseDownTargetRef.current) {
+        if (e.target === e.currentTarget && (e.currentTarget as any)._mouseDownTarget) {
           onClose();
         }
-        mouseDownTargetRef.current = false;
+        (e.currentTarget as any)._mouseDownTarget = false;
       }}
     >
       <div

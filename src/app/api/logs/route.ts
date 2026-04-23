@@ -1,7 +1,6 @@
 import { NextResponse, NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/authMiddleware";
-import { Prisma } from "@prisma/client";
 
 export async function GET(req: NextRequest) {
   try {
@@ -22,7 +21,7 @@ export async function GET(req: NextRequest) {
     const skip = isAll ? undefined : (page - 1) * limit;
     const take = isAll ? undefined : limit;
 
-    const where: Prisma.ActivityLogWhereInput = {
+    const where: any = {
       accountId: payload.accountId,
     };
     if (search) {
@@ -46,10 +45,9 @@ export async function GET(req: NextRequest) {
       logs,
       total,
       page,
-      totalPages: limit > 0 ? Math.ceil(total / limit) : 1,
+      totalPages: Math.ceil(total / limit),
     });
-  } catch (error) {
-    console.error("Fetch logs error:", error);
+  } catch (error: any) {
     return NextResponse.json({ error: "Failed to fetch logs" }, { status: 500 });
   }
 }

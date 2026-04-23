@@ -15,11 +15,9 @@ import {
   Cell,
 } from "recharts";
 
-import { TrendData, DistributionData } from "@/types";
-
 interface ChartProps {
-  trendData: TrendData[];
-  distributionData: DistributionData[];
+  trendData: any[];
+  distributionData: any[];
 }
 
 export default function DashboardCharts({ trendData, distributionData }: ChartProps) {

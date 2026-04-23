@@ -49,10 +49,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     }
 
     return NextResponse.json(updated);
-  } catch (error) {
+  } catch (error: any) {
     console.error("Update Error:", error);
-    const message = error instanceof Error ? error.message : "Update failed";
-    return NextResponse.json({ error: "Update failed", details: message }, { status: 500 });
+    return NextResponse.json({ error: "Update failed", details: error.message }, { status: 500 });
   }
 }
 
@@ -99,9 +98,8 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     });
 
     return NextResponse.json({ success: true });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Delete Error:", error);
-    const message = error instanceof Error ? error.message : "Delete failed";
-    return NextResponse.json({ error: "Delete failed", details: message }, { status: 500 });
+    return NextResponse.json({ error: "Delete failed", details: error.message }, { status: 500 });
   }
 }
