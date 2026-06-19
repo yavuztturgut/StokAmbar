@@ -8,7 +8,7 @@ import toast from 'react-hot-toast';
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { isAuthenticated, user, account, isLoading, token } = useAuth();
+  const { isAuthenticated, user, account, isLoading } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({
@@ -23,16 +23,14 @@ export default function ProfilePage() {
   }, [isAuthenticated, isLoading, router]);
 
   const handleSave = async () => {
-    if (!token) return;
-
     setIsSaving(true);
     try {
       const response = await fetch('/api/auth/profile', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
         },
+        credentials: 'same-origin',
         body: JSON.stringify(formData),
       });
 

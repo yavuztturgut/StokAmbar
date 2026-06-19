@@ -2,6 +2,7 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'stok-takip-secret-key-change-in-production';
+export const AUTH_COOKIE_NAME = 'auth_token';
 
 export interface TokenPayload {
   userId: number;
@@ -17,15 +18,18 @@ export const verifyPassword = async (password: string, hashedPassword: string): 
   return bcrypt.compare(password, hashedPassword);
 };
 
-export const generateToken = (payload: TokenPayload, expiresIn: string = '7d'): string => {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: expiresIn as any });
+export const generateToken = (
+  payload: TokenPayload,
+  expiresIn: jwt.SignOptions["expiresIn"] = '7d'
+): string => {
+  return jwt.sign(payload, JWT_SECRET, { expiresIn });
 };
 
 export const verifyToken = (token: string): TokenPayload | null => {
   try {
     const decoded = jwt.verify(token, JWT_SECRET) as TokenPayload;
     return decoded;
-  } catch (error) {
+  } catch {
     return null;
   }
 };
@@ -38,4 +42,12 @@ export const extractTokenFromHeader = (authHeader: string | null): string | null
   }
   return null;
 };
+
+export const getAuthCookieOptions = (maxAge: number) => ({
+  httpOnly: true,
+  sameSite: 'lax' as const,
+  secure: process.env.NODE_ENV === 'production',
+  path: '/',
+  maxAge,
+});
 

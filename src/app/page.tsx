@@ -17,21 +17,20 @@ import { Ingredient } from "@/types";
 
 export default function Home() {
   const router = useRouter();
-  const { isAuthenticated, token, isLoading: authLoading } = useAuth();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [analytics, setAnalytics] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingIngredient, setEditingIngredient] = useState<Ingredient | null>(null);
   const [refreshLogsKey, setRefreshLogsKey] = useState(() => Date.now());
+  const [trendDays, setTrendDays] = useState(7);
 
   const fetchIngredients = useCallback(() => {
-    if (!token) return;
+    if (!isAuthenticated) return Promise.resolve();
 
-    fetch("/api/ingredients", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+    return fetch("/api/ingredients", {
+      credentials: "same-origin",
     })
       .then((res) => {
         if (res.status === 401) {
@@ -48,15 +47,13 @@ export default function Home() {
       .catch((err) => {
         console.error("Fetch ingredients error:", err);
       });
-  }, [token, router]);
+  }, [isAuthenticated, router]);
 
   const fetchAnalytics = useCallback(() => {
-    if (!token) return;
+    if (!isAuthenticated) return Promise.resolve();
 
-    fetch("/api/analytics", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+    return fetch(`/api/analytics?days=${trendDays}`, {
+      credentials: "same-origin",
     })
       .then((res) => res.json())
       .then((data) => {
@@ -67,7 +64,7 @@ export default function Home() {
       .catch((err) => {
         console.error("Fetch analytics error:", err);
       });
-  }, [token]);
+  }, [isAuthenticated, trendDays]);
 
   const loadData = useCallback(() => {
     setIsLoading(true);
@@ -81,11 +78,19 @@ export default function Home() {
     }
   }, [isAuthenticated, authLoading, router]);
 
+  // Initial load
   useEffect(() => {
-    if (token) {
+    if (isAuthenticated) {
       loadData();
     }
-  }, [token, loadData]);
+  }, [isAuthenticated, loadData]); // Only run once on auth change
+
+  // Re-fetch analytics when trendDays changes
+  useEffect(() => {
+    if (isAuthenticated && !isLoading) { // Avoid double call on initial load
+      fetchAnalytics();
+    }
+  }, [isAuthenticated, isLoading, fetchAnalytics]);
 
   const triggerRefresh = () => {
     loadData();
@@ -204,6 +209,8 @@ export default function Home() {
           <DashboardCharts
             trendData={analytics.trend}
             distributionData={analytics.distribution}
+            trendDays={trendDays}
+            onTrendDaysChange={setTrendDays}
           />
         )}
 

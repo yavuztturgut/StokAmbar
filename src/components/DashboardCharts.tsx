@@ -18,16 +18,39 @@ import {
 interface ChartProps {
   trendData: any[];
   distributionData: any[];
+  trendDays: number;
+  onTrendDaysChange: (days: number) => void;
 }
 
-export default function DashboardCharts({ trendData, distributionData }: ChartProps) {
+export default function DashboardCharts({ 
+  trendData, 
+  distributionData, 
+  trendDays, 
+  onTrendDaysChange 
+}: ChartProps) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
       {/* Usage Trend Chart */}
       <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="font-bold text-slate-800">Tüketim Trendi (Son 7 Gün)</h3>
-          <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-md">Toplam Çıkış</span>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
+          <div>
+            <h3 className="font-bold text-slate-800">Tüketim Trendi</h3>
+            <p className="text-[10px] text-slate-400 font-medium">Son {trendDays} günlük toplam çıkış hacmi</p>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <select
+              value={trendDays}
+              onChange={(e) => onTrendDaysChange(Number(e.target.value))}
+              className="text-[11px] font-bold text-indigo-600 bg-indigo-50 border-none rounded-lg px-3 py-1.5 outline-none cursor-pointer hover:bg-indigo-100 transition-colors"
+            >
+              <option value={7}>Son 7 Gün</option>
+              <option value={15}>Son 15 Gün</option>
+              <option value={30}>Son 30 Gün</option>
+              <option value={90}>Son 90 Gün</option>
+            </select>
+            <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-1.5 rounded-lg border border-indigo-100/50 hidden sm:inline-block">Toplam Çıkış</span>
+          </div>
         </div>
         <div className="h-[300px] w-full">
           <ResponsiveContainer width="100%" height="100%">
@@ -45,6 +68,8 @@ export default function DashboardCharts({ trendData, distributionData }: ChartPr
                 tickLine={false}
                 tick={{ fontSize: 10, fill: '#64748b' }}
                 dy={10}
+                minTickGap={30}
+                interval="preserveStartEnd"
               />
               <YAxis
                 axisLine={false}

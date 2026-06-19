@@ -2,7 +2,6 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { Plus, Minus, Trash2, Check, X, Donut, ClipboardPlus, SquareArrowRight } from "lucide-react";
-import { useAuth } from "@/context/AuthContext";
 import toast from "react-hot-toast";
 
 interface MovementButtonsProps {
@@ -12,7 +11,6 @@ interface MovementButtonsProps {
 }
 
 export default function MovementButtons({ ingredientId, currentStock, onSuccess }: MovementButtonsProps) {
-  const { token } = useAuth();
   const [activeType, setActiveType] = useState<"IN" | "OUT" | "WASTE" | null>(null);
   const [quantity, setQuantity] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -41,8 +39,8 @@ export default function MovementButtons({ ingredientId, currentStock, onSuccess 
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
         },
+        credentials: "same-origin",
         body: JSON.stringify({
           ingredientId,
           type: activeType,

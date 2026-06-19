@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import { X, Plus, Save } from "lucide-react";
-import { useAuth } from "@/context/AuthContext";
 import toast from "react-hot-toast";
 
 interface AddStockModalProps {
@@ -11,7 +10,6 @@ interface AddStockModalProps {
 }
 
 export default function AddStockModal({ onSuccess, onClose }: AddStockModalProps) {
-  const { token } = useAuth();
   const [formData, setFormData] = useState({
     name: "",
     unit: "kg",
@@ -30,8 +28,8 @@ export default function AddStockModal({ onSuccess, onClose }: AddStockModalProps
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
         },
+        credentials: "same-origin",
         body: JSON.stringify(formData),
       });
 

@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse, NextRequest } from "next/server";
 import { requireAuth } from "@/lib/authMiddleware";
+import { formatZodError, ingredientCreateSchema } from "@/lib/validation";
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,12 +15,16 @@ export async function GET(request: NextRequest) {
       where: {
         accountId: payload.accountId,
       },
-      orderBy: { name: 'asc' }
+      orderBy: { name: "asc" },
     });
+
     return NextResponse.json(ingredients);
   } catch (error) {
     console.error("GET Ingredients Error:", error);
-    return NextResponse.json({ error: "Failed to fetch ingredients" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to fetch ingredients" },
+      { status: 500 }
+    );
   }
 }
 
@@ -31,43 +36,46 @@ export async function POST(req: NextRequest) {
       return payload;
     }
 
-    const body = await req.json();
-    const { name, unit, minStockLevel, currentStock } = body;
-
-    if (!name || !unit) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    const parsedBody = ingredientCreateSchema.safeParse(await req.json());
+    if (!parsedBody.success) {
+      return NextResponse.json(
+        { error: formatZodError(parsedBody.error) },
+        { status: 400 }
+      );
     }
 
-    console.log("Creating ingredient with data:", { name, unit, minStockLevel, currentStock });
+    const { name, unit, minStockLevel, currentStock } = parsedBody.data;
 
     const ingredient = await prisma.ingredient.create({
       data: {
         name,
         unit,
-        minStockLevel: parseFloat(minStockLevel) || 0,
-        currentStock: parseFloat(currentStock) || 0,
+        minStockLevel,
+        currentStock,
         accountId: payload.accountId,
       },
     });
 
-    // Activity Log
     await prisma.activityLog.create({
       data: {
         action: "CREATE",
         ingredientId: ingredient.id,
         ingredientName: ingredient.name,
         quantity: ingredient.currentStock,
-        details: "İlk stok oluşturuldu",
+        details: "Ilk stok olusturuldu",
         accountId: payload.accountId,
       },
     });
 
     return NextResponse.json(ingredient);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("POST Ingredient Error Detailed:", error);
-    return NextResponse.json({ 
-      error: "Failed to create ingredient", 
-      details: error.message || "Unknown error" 
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: "Failed to create ingredient",
+        details: error instanceof Error ? error.message : "Unknown error",
+      },
+      { status: 500 }
+    );
   }
 }

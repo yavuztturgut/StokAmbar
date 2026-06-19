@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyToken, extractTokenFromHeader, TokenPayload } from './auth';
+import { verifyToken, extractTokenFromHeader, TokenPayload, AUTH_COOKIE_NAME } from './auth';
 
 export const authMiddleware = async (request: NextRequest) => {
   const authHeader = request.headers.get('authorization');
-  const token = extractTokenFromHeader(authHeader);
+  const token =
+    extractTokenFromHeader(authHeader) ??
+    request.cookies.get(AUTH_COOKIE_NAME)?.value ??
+    null;
 
   if (!token) {
     return {

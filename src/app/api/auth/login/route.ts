@@ -1,21 +1,25 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { verifyPassword, generateToken } from '@/lib/auth';
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import {
+  verifyPassword,
+  generateToken,
+  AUTH_COOKIE_NAME,
+  getAuthCookieOptions,
+} from "@/lib/auth";
+import { formatZodError, loginSchema } from "@/lib/validation";
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { email, password, rememberMe } = body;
-
-    // Validasyon
-    if (!email || !password) {
+    const parsedBody = loginSchema.safeParse(await request.json());
+    if (!parsedBody.success) {
       return NextResponse.json(
-        { error: 'Email ve şifre gereklidir' },
+        { error: formatZodError(parsedBody.error) },
         { status: 400 }
       );
     }
 
-    // Kullanıcıyı bul
+    const { email, password, rememberMe } = parsedBody.data;
+
     const user = await prisma.user.findUnique({
       where: { email },
       include: {
@@ -25,31 +29,30 @@ export async function POST(request: NextRequest) {
 
     if (!user) {
       return NextResponse.json(
-        { error: 'Geçersiz email veya şifre' },
+        { error: "Geçersiz email veya şifre" },
         { status: 401 }
       );
     }
 
-    // Şifreyi doğrula
     const isPasswordValid = await verifyPassword(password, user.password);
-
     if (!isPasswordValid) {
       return NextResponse.json(
-        { error: 'Geçersiz email veya şifre' },
+        { error: "Geçersiz email veya şifre" },
         { status: 401 }
       );
     }
 
-    // Token oluştur
-    const token = generateToken({
-      userId: user.id,
-      accountId: user.accountId,
-      email: user.email,
-    }, rememberMe ? '30d' : '1d');
+    const token = generateToken(
+      {
+        userId: user.id,
+        accountId: user.accountId,
+        email: user.email,
+      },
+      rememberMe ? "30d" : "1d"
+    );
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
-      token,
       user: {
         id: user.id,
         email: user.email,
@@ -64,10 +67,18 @@ export async function POST(request: NextRequest) {
         createdAt: user.account.createdAt,
       },
     });
+
+    response.cookies.set(
+      AUTH_COOKIE_NAME,
+      token,
+      getAuthCookieOptions(rememberMe ? 60 * 60 * 24 * 30 : 60 * 60 * 24)
+    );
+
+    return response;
   } catch (error) {
-    console.error('Giriş hatası:', error);
+    console.error("Giriş hatası:", error);
     return NextResponse.json(
-      { error: 'Giriş sırasında bir hata oluştu' },
+      { error: "Giriş sırasında bir hata oluştu" },
       { status: 500 }
     );
   }

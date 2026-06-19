@@ -35,7 +35,6 @@ export interface Account {
 
 export interface AuthResponse {
   success: boolean;
-  token: string;
   user: User;
   account: Account;
 }

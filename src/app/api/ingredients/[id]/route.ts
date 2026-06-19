@@ -1,8 +1,12 @@
 import { NextResponse, NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/authMiddleware";
+import { formatZodError, ingredientUpdateSchema } from "@/lib/validation";
 
-export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
     const payload = await requireAuth(req);
 
@@ -11,11 +15,18 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     }
 
     const { id: idStr } = await params;
-    const id = parseInt(idStr);
-    const body = await req.json();
-    const { name, minStockLevel, unit } = body;
+    const id = Number.parseInt(idStr, 10);
+    const parsedBody = ingredientUpdateSchema.safeParse(await req.json());
 
-    // Kaynağı check et - kullanıcı bu kaynağı kullanabilir mi?
+    if (!parsedBody.success) {
+      return NextResponse.json(
+        { error: formatZodError(parsedBody.error) },
+        { status: 400 }
+      );
+    }
+
+    const { name, minStockLevel, unit } = parsedBody.data;
+
     const ingredient = await prisma.ingredient.findUnique({
       where: { id },
     });
@@ -29,11 +40,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       data: {
         name,
         unit,
-        minStockLevel: parseFloat(minStockLevel),
+        minStockLevel,
       },
     });
 
-    // Activity Log
     try {
       await prisma.activityLog.create({
         data: {
@@ -44,18 +54,27 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
           accountId: payload.accountId,
         },
       });
-    } catch (e) {
-      console.error("Log error (Update):", e);
+    } catch (error) {
+      console.error("Log error (Update):", error);
     }
 
     return NextResponse.json(updated);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Update Error:", error);
-    return NextResponse.json({ error: "Update failed", details: error.message }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: "Update failed",
+        details: error instanceof Error ? error.message : "Unknown error",
+      },
+      { status: 500 }
+    );
   }
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
     const payload = await requireAuth(req);
 
@@ -64,16 +83,18 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     }
 
     const { id: idStr } = await params;
-    const id = parseInt(idStr);
+    const id = Number.parseInt(idStr, 10);
 
     const ingredient = await prisma.ingredient.findUnique({ where: { id } });
 
-    if (!ingredient) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    if (!ingredient) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
     if (ingredient.accountId !== payload.accountId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
-    // Activity Log - FIRST, so we have the info
     try {
       await prisma.activityLog.create({
         data: {
@@ -84,11 +105,10 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
           accountId: payload.accountId,
         },
       });
-    } catch (e) {
-      console.error("Log error (Delete):", e);
+    } catch (error) {
+      console.error("Log error (Delete):", error);
     }
 
-    // Explicitly delete transactions
     await prisma.stockTransaction.deleteMany({
       where: { ingredientId: id },
     });
@@ -98,8 +118,14 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     });
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Delete Error:", error);
-    return NextResponse.json({ error: "Delete failed", details: error.message }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: "Delete failed",
+        details: error instanceof Error ? error.message : "Unknown error",
+      },
+      { status: 500 }
+    );
   }
 }

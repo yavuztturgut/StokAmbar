@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { Layers, LogOut, Settings, LogIn } from "lucide-react";
+import { Layers, LogOut, Settings } from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function Navbar() {
@@ -19,7 +19,7 @@ export default function Navbar() {
   ];
 
   const handleLogout = () => {
-    logout();
+    void logout();
     toast.success("Çıkış yapıldı");
     setIsProfileOpen(false);
     router.push("/login");

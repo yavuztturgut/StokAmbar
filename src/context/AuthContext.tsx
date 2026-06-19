@@ -7,10 +7,9 @@ interface AuthContextType {
   isAuthenticated: boolean;
   user: User | null;
   account: Account | null;
-  token: string | null;
   login: (email: string, password: string, rememberMe?: boolean) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   isLoading: boolean;
 }
 
@@ -29,28 +28,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [account, setAccount] = useState<Account | null>(null);
-  const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Token'i localStorage'dan yükle
   useEffect(() => {
-    const storedToken = localStorage.getItem('auth_token');
-    if (storedToken) {
-      setToken(storedToken);
-      setIsAuthenticated(true);
-      // Profil bilgisini getir
-      fetchProfile(storedToken);
-    } else {
-      setIsLoading(false);
-    }
+    fetchProfile();
   }, []);
 
-  const fetchProfile = async (authToken: string) => {
+  const fetchProfile = async () => {
     try {
       const response = await fetch('/api/auth/profile', {
-        headers: {
-          Authorization: `Bearer ${authToken}`,
-        },
+        credentials: 'same-origin',
       });
 
       if (response.ok) {
@@ -59,12 +46,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setAccount(data.account);
         setIsAuthenticated(true);
       } else {
-        localStorage.removeItem('auth_token');
+        setUser(null);
+        setAccount(null);
         setIsAuthenticated(false);
       }
     } catch (error) {
       console.error('Profil yükleme hatası:', error);
-      localStorage.removeItem('auth_token');
+      setUser(null);
+      setAccount(null);
       setIsAuthenticated(false);
     } finally {
       setIsLoading(false);
@@ -79,6 +68,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'same-origin',
         body: JSON.stringify({ email, password, rememberMe }),
       });
 
@@ -88,11 +78,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       const data = await response.json();
-      setToken(data.token);
       setUser(data.user);
       setAccount(data.account);
       setIsAuthenticated(true);
-      localStorage.setItem('auth_token', data.token);
     } catch (error) {
       throw error;
     } finally {
@@ -108,6 +96,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'same-origin',
         body: JSON.stringify(data),
       });
 
@@ -117,11 +106,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       const result = await response.json();
-      setToken(result.token);
       setUser(result.user);
       setAccount(result.account);
       setIsAuthenticated(true);
-      localStorage.setItem('auth_token', result.token);
     } catch (error) {
       throw error;
     } finally {
@@ -129,12 +116,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'same-origin',
+      });
+    } catch (error) {
+      console.error('Logout hatası:', error);
+    }
+
     setIsAuthenticated(false);
     setUser(null);
     setAccount(null);
-    setToken(null);
-    localStorage.removeItem('auth_token');
   };
 
   return (
@@ -143,7 +137,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isAuthenticated,
         user,
         account,
-        token,
         login,
         register,
         logout,
@@ -162,4 +155,3 @@ export const useAuth = () => {
   }
   return context;
 };
-

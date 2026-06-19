@@ -12,20 +12,16 @@ interface ActivityLogListProps {
 }
 
 export default function ActivityLogList({ refreshTrigger, limit }: ActivityLogListProps) {
-  const { token } = useAuth();
+  const { isAuthenticated } = useAuth();
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchLogs = async () => {
-    if (!token) return;
+    if (!isAuthenticated) return;
 
     try {
       const url = limit ? `/api/logs?limit=${limit}` : "/api/logs";
-      const response = await fetch(url, {
-        headers: {
-          "Authorization": `Bearer ${token}`,
-        },
-      });
+      const response = await fetch(url, { credentials: "same-origin" });
       const data = await response.json();
 
       // Handle both object and array response for backward compatibility
@@ -42,13 +38,13 @@ export default function ActivityLogList({ refreshTrigger, limit }: ActivityLogLi
   };
 
   useEffect(() => {
-    if (token) {
+    if (isAuthenticated) {
       fetchLogs();
       // Poll every 30 seconds for background updates
       const interval = setInterval(fetchLogs, 30000);
       return () => clearInterval(interval);
     }
-  }, [refreshTrigger, token]);
+  }, [refreshTrigger, isAuthenticated]);
 
   const getActionIcon = (action: string) => {
     switch (action) {

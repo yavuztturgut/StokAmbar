@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAuth } from '@/lib/authMiddleware';
+import { formatZodError, profileUpdateSchema } from '@/lib/validation';
 
 export async function GET(request: NextRequest) {
   try {
@@ -58,8 +59,15 @@ export async function PUT(request: NextRequest) {
       return payload;
     }
 
-    const body = await request.json();
-    const { accountName, accountPhone } = body;
+    const parsedBody = profileUpdateSchema.safeParse(await request.json());
+    if (!parsedBody.success) {
+      return NextResponse.json(
+        { error: formatZodError(parsedBody.error) },
+        { status: 400 }
+      );
+    }
+
+    const { accountName, accountPhone } = parsedBody.data;
 
     // Hesap bilgisini güncelle
     const updatedAccount = await prisma.account.update({

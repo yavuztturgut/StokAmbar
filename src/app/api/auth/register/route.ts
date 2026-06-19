@@ -1,28 +1,26 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { hashPassword, generateToken } from '@/lib/auth';
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import {
+  hashPassword,
+  generateToken,
+  AUTH_COOKIE_NAME,
+  getAuthCookieOptions,
+} from "@/lib/auth";
+import { formatZodError, registerSchema } from "@/lib/validation";
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { email, username, password, accountName, accountEmail, phone } = body;
-
-    // Validasyon
-    if (!email || !username || !password) {
+    const parsedBody = registerSchema.safeParse(await request.json());
+    if (!parsedBody.success) {
       return NextResponse.json(
-        { error: 'Email, username ve password gereklidir' },
+        { error: formatZodError(parsedBody.error) },
         { status: 400 }
       );
     }
 
-    if (!accountName || !accountEmail) {
-      return NextResponse.json(
-        { error: 'Hesap adı ve email gereklidir' },
-        { status: 400 }
-      );
-    }
+    const { email, username, password, accountName, accountEmail, phone } =
+      parsedBody.data;
 
-    // Kullanıcı/Email zaten var mı kontrol et
     const existingUser = await prisma.user.findFirst({
       where: {
         OR: [{ email }, { username }],
@@ -31,27 +29,24 @@ export async function POST(request: NextRequest) {
 
     if (existingUser) {
       return NextResponse.json(
-        { error: 'Bu email veya username zaten kullanılıyor' },
+        { error: "Bu email veya username zaten kullanılıyor" },
         { status: 400 }
       );
     }
 
-    // Hesap email zaten var mı kontrol et
     const existingAccount = await prisma.account.findUnique({
       where: { email: accountEmail },
     });
 
     if (existingAccount) {
       return NextResponse.json(
-        { error: 'Bu hesap email adresi zaten kayıtlı' },
+        { error: "Bu hesap email adresi zaten kayıtlı" },
         { status: 400 }
       );
     }
 
-    // Şifreyi hashle
     const hashedPassword = await hashPassword(password);
 
-    // Yeni hesap ve kullanıcı oluştur
     const account = await prisma.account.create({
       data: {
         name: accountName,
@@ -69,16 +64,14 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Token oluştur
     const token = generateToken({
       userId: user.id,
       accountId: account.id,
       email: user.email,
     });
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
-      token,
       user: {
         id: user.id,
         email: user.email,
@@ -93,12 +86,19 @@ export async function POST(request: NextRequest) {
         createdAt: account.createdAt,
       },
     });
+
+    response.cookies.set(
+      AUTH_COOKIE_NAME,
+      token,
+      getAuthCookieOptions(60 * 60 * 24 * 7)
+    );
+
+    return response;
   } catch (error) {
-    console.error('Kayıt hatası:', error);
+    console.error("Kayıt hatası:", error);
     return NextResponse.json(
-      { error: 'Kayıt sırasında bir hata oluştu' },
+      { error: "Kayıt sırasında bir hata oluştu" },
       { status: 500 }
     );
   }
 }
-

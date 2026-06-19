@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from "react";
 import { X, Save, Trash2, AlertTriangle } from "lucide-react";
-import { useAuth } from "@/context/AuthContext";
 import { Ingredient } from "@/types";
 import ConfirmModal from "./ConfirmModal";
 import toast from "react-hot-toast";
@@ -14,7 +13,6 @@ interface EditStockModalProps {
 }
 
 export default function EditStockModal({ ingredient, onSuccess, onClose }: EditStockModalProps) {
-  const { token } = useAuth();
   const [formData, setFormData] = useState({
     name: ingredient.name,
     unit: ingredient.unit,
@@ -33,8 +31,8 @@ export default function EditStockModal({ ingredient, onSuccess, onClose }: EditS
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
         },
+        credentials: "same-origin",
         body: JSON.stringify(formData),
       });
 
@@ -58,9 +56,7 @@ export default function EditStockModal({ ingredient, onSuccess, onClose }: EditS
     try {
       const response = await fetch(`/api/ingredients/${ingredient.id}`, {
         method: "DELETE",
-        headers: {
-          "Authorization": `Bearer ${token}`,
-        },
+        credentials: "same-origin",
       });
 
       if (response.ok) {
