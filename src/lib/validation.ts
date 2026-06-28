@@ -19,6 +19,11 @@ export const loginSchema = z.object({
   rememberMe: z.boolean().optional().default(false),
 });
 
+export const selectCompanySchema = z.object({
+  selectionToken: z.string().min(1),
+  accountId: z.coerce.number().int().positive(),
+});
+
 export const registerSchema = z.object({
   email: z.string().trim().email(),
   username: z.string().trim().min(3).max(50),
@@ -50,13 +55,27 @@ export const transactionSchema = z.object({
 
 export const profileUpdateSchema = z
   .object({
-    accountName: optionalTrimmedString,
-    accountPhone: optionalTrimmedString,
+    activeAccountId: z.coerce.number().int().positive().optional(),
   })
   .refine(
-    (data) => data.accountName !== undefined || data.accountPhone !== undefined,
+    (data) => data.activeAccountId !== undefined,
     { message: "En az bir alan guncellenmelidir." }
   );
+
+export const accountCreateSchema = z.object({
+  name: nonEmptyTrimmedString.max(120),
+  email: z.string().trim().email(),
+  phone: optionalTrimmedString,
+});
+
+export const accountUpdateSchema = z.object({
+  name: optionalTrimmedString,
+  email: z.string().trim().email().optional(),
+  phone: optionalTrimmedString,
+}).refine(
+  (data) => data.name !== undefined || data.email !== undefined || data.phone !== undefined,
+  { message: "En az bir alan guncellenmelidir." }
+);
 
 export const logsQuerySchema = z.object({
   limit: z.coerce.number().int().positive().max(100).optional(),

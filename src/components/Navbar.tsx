@@ -4,13 +4,13 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { Layers, LogOut, Settings } from "lucide-react";
+import { Building2, Layers, LogOut, Settings } from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { isAuthenticated, user, account, logout, isLoading } = useAuth();
+  const { isAuthenticated, user, activeAccount, accounts, switchAccount, logout, isLoading } = useAuth();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   const navLinks = [
@@ -20,42 +20,39 @@ export default function Navbar() {
 
   const handleLogout = () => {
     void logout();
-    toast.success("Çıkış yapıldı");
+    toast.success("Cikis yapildi");
     setIsProfileOpen(false);
     router.push("/login");
   };
 
-  // Login/Register sayfalarında navbar gösterme
   if (pathname === "/login" || pathname === "/register") {
     return null;
   }
 
-  // Loading durumunda
   if (isLoading) {
     return (
-      <header className="bg-[#fafbff] border-b border-indigo-100/60 px-8 py-4 sticky top-0 z-50 shadow-sm">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
+      <header className="sticky top-0 z-50 border-b border-indigo-100/60 bg-[#fafbff] px-8 py-4 shadow-sm">
+        <div className="mx-auto flex max-w-7xl items-center justify-between">
           <Link href="/" className="flex items-center gap-3">
-            <div className="bg-indigo-600 p-2 rounded-xl text-white">
+            <div className="rounded-xl bg-indigo-600 p-2 text-white">
               <Layers size={22} />
             </div>
             <span className="text-xl font-black tracking-tighter text-slate-800">
               Stok<span className="text-indigo-600">Ambar</span>
             </span>
           </Link>
-          <div className="text-sm text-slate-500">Yükleniyor...</div>
+          <div className="text-sm text-slate-500">Yukleniyor...</div>
         </div>
       </header>
     );
   }
 
-  // Authenticate edilmemişse login sayfasına yönlendir
   if (!isAuthenticated) {
     return (
-      <header className="bg-[#fafbff] border-b border-indigo-100/60 px-8 py-4 sticky top-0 z-50 shadow-sm">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
+      <header className="sticky top-0 z-50 border-b border-indigo-100/60 bg-[#fafbff] px-8 py-4 shadow-sm">
+        <div className="mx-auto flex max-w-7xl items-center justify-between">
           <Link href="/" className="flex items-center gap-3">
-            <div className="bg-indigo-600 p-2 rounded-xl text-white">
+            <div className="rounded-xl bg-indigo-600 p-2 text-white">
               <Layers size={22} />
             </div>
             <span className="text-xl font-black tracking-tighter text-slate-800">
@@ -63,17 +60,11 @@ export default function Navbar() {
             </span>
           </Link>
           <div className="flex items-center gap-4">
-            <Link
-              href="/login"
-              className="px-4 py-2 text-sm font-semibold text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-            >
-              Giriş Yap
+            <Link href="/login" className="rounded-lg px-4 py-2 text-sm font-semibold text-blue-600 transition-colors hover:bg-blue-50">
+              Giris Yap
             </Link>
-            <Link
-              href="/register"
-              className="px-4 py-2 text-sm font-semibold bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Kayıt Ol
+            <Link href="/register" className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700">
+              Kayit Ol
             </Link>
           </div>
         </div>
@@ -82,11 +73,10 @@ export default function Navbar() {
   }
 
   return (
-    <header className="bg-[#fafbff] border-b border-indigo-100/60 px-8 py-4 sticky top-0 z-50 shadow-sm">
-      <div className="max-w-7xl mx-auto flex justify-between items-center">
-        {/* Logo */}
-        <Link href="/" className="flex items-center gap-3 group transition-all">
-          <div className="bg-indigo-600 p-2 rounded-xl text-white shadow-lg shadow-indigo-100 group-hover:scale-110 transition-transform">
+    <header className="sticky top-0 z-50 border-b border-indigo-100/60 bg-[#fafbff] px-8 py-4 shadow-sm">
+      <div className="mx-auto flex max-w-7xl items-center justify-between">
+        <Link href="/" className="group flex items-center gap-3 transition-all">
+          <div className="rounded-xl bg-indigo-600 p-2 text-white shadow-lg shadow-indigo-100 transition-transform group-hover:scale-110">
             <Layers size={22} />
           </div>
           <span className="text-xl font-black tracking-tighter text-slate-800">
@@ -94,7 +84,6 @@ export default function Navbar() {
           </span>
         </Link>
 
-        {/* Navigation */}
         <nav className="flex items-center gap-8">
           {navLinks.map((link) => {
             const isActive = pathname === link.href;
@@ -102,63 +91,75 @@ export default function Navbar() {
               <Link
                 key={link.href}
                 href={link.href}
-                className={`relative py-1 text-sm font-semibold transition-colors ${isActive ? "text-indigo-600" : "text-slate-500 hover:text-slate-800"
-                  }`}
+                className={`relative py-1 text-sm font-semibold transition-colors ${isActive ? "text-indigo-600" : "text-slate-500 hover:text-slate-800"}`}
               >
                 {link.name}
-                <span
-                  className={`absolute bottom-0 left-1/2 h-0.5 bg-indigo-600 transition-all duration-300 ${isActive ? "w-full -translate-x-1/2" : "w-0"
-                    }`}
-                />
+                <span className={`absolute bottom-0 left-1/2 h-0.5 bg-indigo-600 transition-all duration-300 ${isActive ? "w-full -translate-x-1/2" : "w-0"}`} />
               </Link>
             );
           })}
         </nav>
 
-        {/* Profile Menu */}
         <div className="relative">
           <button
-            onClick={() => setIsProfileOpen(!isProfileOpen)}
-            className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-indigo-50 transition-colors"
+            onClick={() => setIsProfileOpen((value) => !value)}
+            className="flex items-center gap-3 rounded-lg px-4 py-2 transition-colors hover:bg-indigo-50"
           >
-            <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-xs font-bold text-indigo-600">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-600">
               {user?.username?.[0]?.toUpperCase() || "U"}
             </div>
-            <div className="text-left hidden sm:block">
+            <div className="hidden text-left sm:block">
               <p className="text-xs text-slate-500">Hesap</p>
-              <p className="text-sm font-semibold text-slate-800">{account?.name}</p>
+              <p className="text-sm font-semibold text-slate-800">{activeAccount?.name}</p>
             </div>
           </button>
 
-          {/* Dropdown Menu */}
           {isProfileOpen && (
-            <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-slate-100 py-2 z-50">
-              <div className="px-4 py-3 border-b border-slate-100">
-                <p className="text-xs text-slate-500 uppercase font-bold">Hesap</p>
-                <p className="text-sm font-semibold text-slate-800 mt-1">{account?.name}</p>
-                <p className="text-xs text-slate-500 mt-1">{account?.email}</p>
+            <div className="absolute right-0 z-50 mt-2 w-72 rounded-xl border border-slate-100 bg-white py-2 shadow-lg">
+              <div className="border-b border-slate-100 px-4 py-3">
+                <p className="text-xs font-bold uppercase text-slate-500">Aktif Sirket</p>
+                <p className="mt-1 text-sm font-semibold text-slate-800">{activeAccount?.name}</p>
+                <p className="mt-1 text-xs text-slate-500">{activeAccount?.email}</p>
               </div>
 
-              <div className="px-4 py-3 border-b border-slate-100">
-                <p className="text-xs text-slate-500 uppercase font-bold">Kullanıcı</p>
-                <p className="text-sm font-semibold text-slate-800 mt-1">@{user?.username}</p>
-                <p className="text-xs text-slate-500 mt-1">{user?.email}</p>
+              {accounts.length > 1 && (
+                <div className="border-b border-slate-100 px-4 py-3">
+                  <p className="mb-2 text-xs font-bold uppercase text-slate-500">Sirket Degistir</p>
+                  <div className="space-y-2">
+                    {accounts.map((item) => (
+                      <button
+                        key={item.id}
+                        onClick={() => void switchAccount(item.id).then(() => setIsProfileOpen(false))}
+                        className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors ${activeAccount?.id === item.id ? "bg-indigo-50 font-semibold text-indigo-700" : "hover:bg-slate-50 text-slate-700"}`}
+                      >
+                        <Building2 size={15} />
+                        <span>{item.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="border-b border-slate-100 px-4 py-3">
+                <p className="text-xs font-bold uppercase text-slate-500">Kullanici</p>
+                <p className="mt-1 text-sm font-semibold text-slate-800">@{user?.username}</p>
+                <p className="mt-1 text-xs text-slate-500">{user?.email}</p>
               </div>
 
               <button
                 onClick={() => router.push("/profile")}
-                className="w-full text-left px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 transition-colors"
+                className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
               >
                 <Settings size={16} />
-                Profil Ayarları
+                Profil Ayarlari
               </button>
 
               <button
                 onClick={handleLogout}
-                className="w-full text-left px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors border-t border-slate-100"
+                className="flex w-full items-center gap-2 border-t border-slate-100 px-4 py-2 text-left text-sm font-semibold text-red-600 transition-colors hover:bg-red-50"
               >
                 <LogOut size={16} />
-                Çıkış Yap
+                Cikis Yap
               </button>
             </div>
           )}

@@ -1,17 +1,7 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { User, Account } from '@/types';
-
-interface AuthContextType {
-  isAuthenticated: boolean;
-  user: User | null;
-  account: Account | null;
-  login: (email: string, password: string, rememberMe?: boolean) => Promise<void>;
-  register: (data: RegisterData) => Promise<void>;
-  logout: () => Promise<void>;
-  isLoading: boolean;
-}
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { Account, AuthResponse, User } from '@/types';
 
 interface RegisterData {
   email: string;
@@ -22,70 +12,153 @@ interface RegisterData {
   phone?: string;
 }
 
+interface PendingSelection {
+  user: User;
+  accounts: Account[];
+  selectionToken: string;
+}
+
+interface AuthContextType {
+  isAuthenticated: boolean;
+  user: User | null;
+  activeAccount: Account | null;
+  accounts: Account[];
+  pendingSelection: PendingSelection | null;
+  login: (email: string, password: string, rememberMe?: boolean) => Promise<AuthResponse | void>;
+  selectCompany: (accountId: number) => Promise<void>;
+  switchAccount: (accountId: number) => Promise<void>;
+  register: (data: RegisterData) => Promise<void>;
+  createAccount: (data: { name: string; email: string; phone?: string }) => Promise<void>;
+  updateAccount: (id: number, data: { name?: string; email?: string; phone?: string }) => Promise<void>;
+  deleteAccount: (id: number) => Promise<void>;
+  logout: () => Promise<void>;
+  isLoading: boolean;
+}
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<User | null>(null);
-  const [account, setAccount] = useState<Account | null>(null);
+  const [activeAccount, setActiveAccount] = useState<Account | null>(null);
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [pendingSelection, setPendingSelection] = useState<PendingSelection | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    fetchProfile();
-  }, []);
+  const applySession = (data: AuthResponse) => {
+    setUser(data.user);
+    setActiveAccount(data.activeAccount);
+    setAccounts(data.accounts || []);
+    setPendingSelection(null);
+    setIsAuthenticated(true);
+  };
+
+  const clearSession = () => {
+    setIsAuthenticated(false);
+    setUser(null);
+    setActiveAccount(null);
+    setAccounts([]);
+    setPendingSelection(null);
+  };
 
   const fetchProfile = async () => {
     try {
-      const response = await fetch('/api/auth/profile', {
-        credentials: 'same-origin',
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setUser(data.user);
-        setAccount(data.account);
-        setIsAuthenticated(true);
-      } else {
-        setUser(null);
-        setAccount(null);
-        setIsAuthenticated(false);
+      const response = await fetch('/api/auth/profile', { credentials: 'same-origin' });
+      if (!response.ok) {
+        clearSession();
+        return;
       }
+
+      const data = await response.json();
+      setUser(data.user);
+      setActiveAccount(data.activeAccount);
+      setAccounts(data.accounts || []);
+      setIsAuthenticated(true);
     } catch (error) {
-      console.error('Profil yükleme hatası:', error);
-      setUser(null);
-      setAccount(null);
-      setIsAuthenticated(false);
+      console.error('Profil yukleme hatasi:', error);
+      clearSession();
     } finally {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    void fetchProfile();
+  }, []);
 
   const login = async (email: string, password: string, rememberMe: boolean = false) => {
     setIsLoading(true);
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         credentials: 'same-origin',
         body: JSON.stringify({ email, password, rememberMe }),
       });
 
+      const data = await response.json();
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Giriş başarısız');
+        throw new Error(data.error || 'Giris basarisiz');
       }
 
-      const data = await response.json();
-      setUser(data.user);
-      setAccount(data.account);
-      setIsAuthenticated(true);
-    } catch (error) {
-      throw error;
+      if (data.requiresCompanySelection) {
+        setPendingSelection({
+          user: data.user,
+          accounts: data.accounts || [],
+          selectionToken: data.selectionToken,
+        });
+        setIsAuthenticated(false);
+        setUser(null);
+        setActiveAccount(null);
+        setAccounts([]);
+        return data;
+      }
+
+      applySession(data);
+      return data;
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const selectCompany = async (accountId: number) => {
+    if (!pendingSelection) {
+      throw new Error('Bekleyen sirket secimi bulunamadi');
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/auth/select-company', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({
+          selectionToken: pendingSelection.selectionToken,
+          accountId,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Sirket secimi basarisiz');
+      }
+      applySession(data);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const switchAccount = async (accountId: number) => {
+    const response = await fetch('/api/auth/switch-account', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify({ accountId }),
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || 'Sirket degistirilemedi');
+    }
+    applySession(data);
   };
 
   const register = async (data: RegisterData) => {
@@ -93,42 +166,83 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const response = await fetch('/api/auth/register', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         credentials: 'same-origin',
         body: JSON.stringify(data),
       });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Kayıt başarısız');
-      }
-
       const result = await response.json();
-      setUser(result.user);
-      setAccount(result.account);
-      setIsAuthenticated(true);
-    } catch (error) {
-      throw error;
+      if (!response.ok) {
+        throw new Error(result.error || 'Kayit basarisiz');
+      }
+      applySession(result);
     } finally {
       setIsLoading(false);
     }
   };
 
+  const refreshProfile = async () => {
+    const response = await fetch('/api/auth/profile', { credentials: 'same-origin' });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || 'Profil yenilenemedi');
+    }
+    setUser(data.user);
+    setActiveAccount(data.activeAccount);
+    setAccounts(data.accounts || []);
+    setIsAuthenticated(true);
+  };
+
+  const createAccount = async (data: { name: string; email: string; phone?: string }) => {
+    const response = await fetch('/api/accounts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify(data),
+    });
+    const result = await response.json();
+    if (!response.ok) {
+      throw new Error(result.error || 'Sirket olusturulamadi');
+    }
+    await refreshProfile();
+  };
+
+  const updateAccount = async (id: number, data: { name?: string; email?: string; phone?: string }) => {
+    const response = await fetch(`/api/accounts/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify(data),
+    });
+    const result = await response.json();
+    if (!response.ok) {
+      throw new Error(result.error || 'Sirket guncellenemedi');
+    }
+    await refreshProfile();
+  };
+
+  const deleteAccount = async (id: number) => {
+    const response = await fetch(`/api/accounts/${id}`, {
+      method: 'DELETE',
+      credentials: 'same-origin',
+    });
+    const result = await response.json();
+    if (!response.ok) {
+      throw new Error(result.error || 'Sirket silinemedi');
+    }
+    if (result.activeAccount && result.accounts) {
+      applySession(result);
+      return;
+    }
+    await refreshProfile();
+  };
+
   const logout = async () => {
     try {
-      await fetch('/api/auth/logout', {
-        method: 'POST',
-        credentials: 'same-origin',
-      });
+      await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' });
     } catch (error) {
-      console.error('Logout hatası:', error);
+      console.error('Logout hatasi:', error);
     }
-
-    setIsAuthenticated(false);
-    setUser(null);
-    setAccount(null);
+    clearSession();
   };
 
   return (
@@ -136,9 +250,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       value={{
         isAuthenticated,
         user,
-        account,
+        activeAccount,
+        accounts,
+        pendingSelection,
         login,
+        selectCompany,
+        switchAccount,
         register,
+        createAccount,
+        updateAccount,
+        deleteAccount,
         logout,
         isLoading,
       }}

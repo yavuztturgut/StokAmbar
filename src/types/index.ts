@@ -21,21 +21,27 @@ export interface User {
   id: number;
   email: string;
   username: string;
-  accountId: number;
+  accountId: number | null;
   createdAt: string;
 }
 
 export interface Account {
   id: number;
+  ownerId?: number;
   name: string;
   email: string;
-  phone?: string;
+  phone?: string | null;
   createdAt: string;
+  updatedAt?: string;
 }
 
 export interface AuthResponse {
   success: boolean;
   user: User;
-  account: Account;
+  activeAccount: Account;
+  accounts: Account[];
+  token?: string;
+  requiresCompanySelection?: boolean;
+  selectionToken?: string;
 }
 
