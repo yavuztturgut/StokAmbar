@@ -35,6 +35,10 @@ export default function ConfirmModal({
       document.body.style.overflow = "auto";
       return () => clearTimeout(timer);
     }
+
+    return () => {
+      document.body.style.overflow = "auto";
+    };
   }, [isOpen]);
 
   if (!isRendered) return null;
@@ -44,22 +48,9 @@ export default function ConfirmModal({
       className={`fixed inset-0 z-50 flex items-center justify-center p-4 transition-all duration-300 ease-out ${isOpen ? "bg-slate-900/60 backdrop-blur-sm opacity-100" : "bg-transparent opacity-0 pointer-events-none"
         }`}
       onClick={(e) => {
-        // Fallback for click if mousedown/mouseup logic is bypassed by some reason, 
-        // but it's mainly handled by mousedown/mouseup now.
-        if (e.target === e.currentTarget && (e.currentTarget as any)._mouseDownTarget) {
-          onClose();
-        }
-      }}
-      onMouseDown={(e) => {
         if (e.target === e.currentTarget) {
-          (e.currentTarget as any)._mouseDownTarget = true;
-        }
-      }}
-      onMouseUp={(e) => {
-        if (e.target === e.currentTarget && (e.currentTarget as any)._mouseDownTarget) {
           onClose();
         }
-        (e.currentTarget as any)._mouseDownTarget = false;
       }}
     >
       <div

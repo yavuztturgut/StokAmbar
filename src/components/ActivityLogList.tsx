@@ -12,7 +12,7 @@ interface ActivityLogListProps {
 }
 
 export default function ActivityLogList({ refreshTrigger, limit }: ActivityLogListProps) {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, activeAccount } = useAuth();
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -44,7 +44,7 @@ export default function ActivityLogList({ refreshTrigger, limit }: ActivityLogLi
       const interval = setInterval(fetchLogs, 30000);
       return () => clearInterval(interval);
     }
-  }, [refreshTrigger, isAuthenticated]);
+  }, [refreshTrigger, isAuthenticated, activeAccount?.id]);
 
   const getActionIcon = (action: string) => {
     switch (action) {

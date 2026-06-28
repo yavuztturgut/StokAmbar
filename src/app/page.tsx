@@ -17,7 +17,7 @@ import { Ingredient } from "@/types";
 
 export default function Home() {
   const router = useRouter();
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { isAuthenticated, activeAccount, isLoading: authLoading } = useAuth();
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [analytics, setAnalytics] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -47,7 +47,7 @@ export default function Home() {
       .catch((err) => {
         console.error("Fetch ingredients error:", err);
       });
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated, router, activeAccount?.id]);
 
   const fetchAnalytics = useCallback(() => {
     if (!isAuthenticated) return Promise.resolve();
@@ -64,7 +64,7 @@ export default function Home() {
       .catch((err) => {
         console.error("Fetch analytics error:", err);
       });
-  }, [isAuthenticated, trendDays]);
+  }, [isAuthenticated, trendDays, activeAccount?.id]);
 
   const loadData = useCallback(() => {
     setIsLoading(true);
@@ -83,14 +83,14 @@ export default function Home() {
     if (isAuthenticated) {
       loadData();
     }
-  }, [isAuthenticated, loadData]); // Only run once on auth change
+  }, [isAuthenticated, loadData, activeAccount?.id]);
 
   // Re-fetch analytics when trendDays changes
   useEffect(() => {
     if (isAuthenticated && !isLoading) { // Avoid double call on initial load
       fetchAnalytics();
     }
-  }, [isAuthenticated, isLoading, fetchAnalytics]);
+  }, [isAuthenticated, isLoading, fetchAnalytics, activeAccount?.id]);
 
   const triggerRefresh = () => {
     loadData();

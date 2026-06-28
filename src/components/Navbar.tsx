@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
@@ -12,6 +12,7 @@ export default function Navbar() {
   const router = useRouter();
   const { isAuthenticated, user, activeAccount, accounts, switchAccount, logout, isLoading } = useAuth();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const profileMenuRef = useRef<HTMLDivElement | null>(null);
 
   const navLinks = [
     { name: "Dashboard", href: "/" },
@@ -23,6 +24,29 @@ export default function Navbar() {
     toast.success("Cikis yapildi");
     setIsProfileOpen(false);
     router.push("/login");
+  };
+
+  useEffect(() => {
+    const handlePointerDown = (event: MouseEvent) => {
+      if (!profileMenuRef.current?.contains(event.target as Node)) {
+        setIsProfileOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handlePointerDown);
+    return () => document.removeEventListener("mousedown", handlePointerDown);
+  }, []);
+
+  const handleSwitchAccount = async (accountId: number) => {
+    try {
+      await switchAccount(accountId);
+      setIsProfileOpen(false);
+      router.refresh();
+      toast.success("Sirket degistirildi");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Sirket degistirilemedi";
+      toast.error(message);
+    }
   };
 
   if (pathname === "/login" || pathname === "/register") {
@@ -100,7 +124,7 @@ export default function Navbar() {
           })}
         </nav>
 
-        <div className="relative">
+        <div ref={profileMenuRef} className="relative">
           <button
             onClick={() => setIsProfileOpen((value) => !value)}
             className="flex items-center gap-3 rounded-lg px-4 py-2 transition-colors hover:bg-indigo-50"
@@ -129,7 +153,7 @@ export default function Navbar() {
                     {accounts.map((item) => (
                       <button
                         key={item.id}
-                        onClick={() => void switchAccount(item.id).then(() => setIsProfileOpen(false))}
+                        onClick={() => void handleSwitchAccount(item.id)}
                         className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors ${activeAccount?.id === item.id ? "bg-indigo-50 font-semibold text-indigo-700" : "hover:bg-slate-50 text-slate-700"}`}
                       >
                         <Building2 size={15} />

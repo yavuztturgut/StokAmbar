@@ -99,7 +99,7 @@ export default function LogsPage() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { isAuthenticated, activeAccount, isLoading: authLoading } = useAuth();
 
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -201,6 +201,7 @@ export default function LogsPage() {
   }, [
     actionFilter,
     amountDirection,
+    activeAccount?.id,
     debouncedSearch,
     endDate,
     isAuthenticated,
@@ -214,7 +215,7 @@ export default function LogsPage() {
     if (isAuthenticated) {
       fetchLogs();
     }
-  }, [fetchLogs, isAuthenticated]);
+  }, [fetchLogs, isAuthenticated, activeAccount?.id]);
 
   const visiblePages = useMemo(() => getVisiblePages(page, totalPages), [page, totalPages]);
 

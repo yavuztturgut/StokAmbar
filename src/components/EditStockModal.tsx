@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { X, Save, Trash2, AlertTriangle } from "lucide-react";
 import { Ingredient } from "@/types";
 import ConfirmModal from "./ConfirmModal";
@@ -75,17 +75,11 @@ export default function EditStockModal({ ingredient, onSuccess, onClose }: EditS
 
   return (
     <div
-      className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-modal-overlay"
-      onMouseDown={(e) => {
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm animate-modal-overlay"
+      onClick={(e) => {
         if (e.target === e.currentTarget) {
-          (e.currentTarget as any)._mouseDownTarget = true;
-        }
-      }}
-      onMouseUp={(e) => {
-        if (e.target === e.currentTarget && (e.currentTarget as any)._mouseDownTarget) {
           onClose();
         }
-        (e.currentTarget as any)._mouseDownTarget = false;
       }}
     >
       <div
