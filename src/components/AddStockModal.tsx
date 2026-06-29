@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
-import { X, Plus, Save } from "lucide-react";
+import { Save, X } from "lucide-react";
 import toast from "react-hot-toast";
+import { clientRequest } from "@/lib/clientApi";
 
 interface AddStockModalProps {
   onSuccess: () => void;
@@ -24,25 +25,25 @@ export default function AddStockModal({ onSuccess, onClose }: AddStockModalProps
     setIsSubmitting(true);
 
     try {
-      const response = await fetch("/api/ingredients", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      await clientRequest(
+        "/api/ingredients",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(formData),
         },
-        credentials: "same-origin",
-        body: JSON.stringify(formData),
-      });
+        "Ekleme sirasinda bir hata olustu."
+      );
 
-      if (response.ok) {
-        toast.success(`${formData.name} başarıyla eklendi!`);
-        onSuccess();
-        onClose();
-      } else {
-        toast.error("Ekleme sırasında bir hata oluştu.");
-      }
+      toast.success(`${formData.name} basariyla eklendi!`);
+      onSuccess();
+      onClose();
     } catch (error) {
       console.error(error);
-      toast.error("Sunucu hatası.");
+      const message = error instanceof Error ? error.message : "Sunucu hatasi.";
+      toast.error(message);
     } finally {
       setIsSubmitting(false);
     }
@@ -58,24 +59,27 @@ export default function AddStockModal({ onSuccess, onClose }: AddStockModalProps
       }}
     >
       <div
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-modal-content"
+        className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl animate-modal-content"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+        <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/50 p-6">
           <h3 className="text-xl font-bold text-slate-800">Yeni Malzeme Ekle</h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors bg-white p-1 rounded-full border border-slate-100">
+          <button
+            onClick={onClose}
+            className="rounded-full border border-slate-100 bg-white p-1 text-slate-400 transition-colors hover:text-slate-600"
+          >
             <X size={20} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 p-6">
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1">Malzeme Adı</label>
+            <label className="mb-1 block text-sm font-semibold text-slate-700">Malzeme Adi</label>
             <input
               required
               type="text"
-              placeholder="Örn: Domates, Un, Süt..."
-              className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+              placeholder="Orn: Domates, Un, Sut..."
+              className="w-full rounded-xl border border-slate-200 px-4 py-2 transition-all focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
             />
@@ -83,9 +87,9 @@ export default function AddStockModal({ onSuccess, onClose }: AddStockModalProps
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1">Birim</label>
+              <label className="mb-1 block text-sm font-semibold text-slate-700">Birim</label>
               <select
-                className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all bg-white"
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2 transition-all focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
                 value={formData.unit}
                 onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
               >
@@ -96,42 +100,54 @@ export default function AddStockModal({ onSuccess, onClose }: AddStockModalProps
               </select>
             </div>
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1">Başlangıç Stoğu</label>
+              <label className="mb-1 block text-sm font-semibold text-slate-700">Baslangic Stogu</label>
               <input
                 type="number"
                 step="0.01"
-                className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                className="w-full rounded-xl border border-slate-200 px-4 py-2 transition-all focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
                 value={formData.currentStock}
-                onChange={(e) => setFormData({ ...formData, currentStock: parseFloat(e.target.value) })}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    currentStock: Number.parseFloat(e.target.value) || 0,
+                  })
+                }
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1">Minimum Stok Seviyesi</label>
+            <label className="mb-1 block text-sm font-semibold text-slate-700">Minimum Stok Seviyesi</label>
             <input
               type="number"
               step="0.01"
-              placeholder="Kritik uyarı seviyesi"
-              className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+              placeholder="Kritik uyari seviyesi"
+              className="w-full rounded-xl border border-slate-200 px-4 py-2 transition-all focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
               value={formData.minStockLevel}
-              onChange={(e) => setFormData({ ...formData, minStockLevel: parseFloat(e.target.value) })}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  minStockLevel: Number.parseFloat(e.target.value) || 0,
+                })
+              }
             />
-            <p className="mt-1 text-xs text-slate-400">Stok bu değerin altına düştüğünde sistem uyarı verir.</p>
+            <p className="mt-1 text-xs text-slate-400">
+              Stok bu degerin altina dustugunde sistem uyari verir.
+            </p>
           </div>
 
-          <div className="pt-4 flex gap-3">
+          <div className="flex gap-3 pt-4">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 font-bold text-slate-600 hover:bg-slate-50 transition-colors"
+              className="flex-1 rounded-xl border border-slate-200 px-4 py-2.5 font-bold text-slate-600 transition-colors hover:bg-slate-50"
             >
-              Vazgeç
+              Vazgec
             </button>
             <button
               disabled={isSubmitting}
               type="submit"
-              className="flex-2 px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold transition-all shadow-lg shadow-indigo-100 disabled:opacity-50 flex items-center justify-center gap-2"
+              className="flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-6 py-2.5 font-bold text-white shadow-lg shadow-indigo-100 transition-all hover:bg-indigo-700 disabled:opacity-50"
             >
               {isSubmitting ? "Ekleniyor..." : <><Save size={18} /> Kaydet</>}
             </button>

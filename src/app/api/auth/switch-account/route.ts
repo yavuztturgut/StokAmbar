@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { AUTH_COOKIE_NAME, getAuthCookieOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { buildAuthResponse, loadAuthUser } from "@/lib/accountAuth";
+import { createAuthSuccessResponse, loadAuthUser } from "@/lib/accountAuth";
 import { requireAuth } from "@/lib/authMiddleware";
 
 export async function POST(request: NextRequest) {
@@ -36,10 +35,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Kullanici bulunamadi" }, { status: 404 });
     }
 
-    const result = buildAuthResponse(refreshed, accountId, "1d");
-    const response = NextResponse.json(result);
-    response.cookies.set(AUTH_COOKIE_NAME, result.token!, getAuthCookieOptions(60 * 60 * 24));
-    return response;
+    return createAuthSuccessResponse(refreshed, accountId, "1d");
   } catch (error) {
     console.error("Sirket degistirme hatasi:", error);
     return NextResponse.json({ error: "Sirket degistirilemedi" }, { status: 500 });

@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { History, ArrowRightLeft, PlusCircle, PencilLine, Trash2, ShieldCheck, Donut, ClipboardPlus, SquareArrowRight } from "lucide-react";
+import { History } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-
+import { clientRequest } from "@/lib/clientApi";
+import { getActionIcon, getActionLabel } from "@/components/logs/logs-utils";
 import { LogEntry } from "@/types";
 
 interface ActivityLogListProps {
@@ -21,10 +22,12 @@ export default function ActivityLogList({ refreshTrigger, limit }: ActivityLogLi
 
     try {
       const url = limit ? `/api/logs?limit=${limit}` : "/api/logs";
-      const response = await fetch(url, { credentials: "same-origin" });
-      const data = await response.json();
+      const data = await clientRequest<{ logs?: LogEntry[] } | LogEntry[]>(
+        url,
+        undefined,
+        "Loglar alinamadi"
+      );
 
-      // Handle both object and array response for backward compatibility
       if (Array.isArray(data)) {
         setLogs(data);
       } else if (data && data.logs) {
@@ -39,51 +42,28 @@ export default function ActivityLogList({ refreshTrigger, limit }: ActivityLogLi
 
   useEffect(() => {
     if (isAuthenticated) {
-      fetchLogs();
-      // Poll every 30 seconds for background updates
-      const interval = setInterval(fetchLogs, 30000);
+      void fetchLogs();
+      const interval = setInterval(() => {
+        void fetchLogs();
+      }, 30000);
       return () => clearInterval(interval);
     }
   }, [refreshTrigger, isAuthenticated, activeAccount?.id]);
 
-  const getActionIcon = (action: string) => {
-    switch (action) {
-      case "CREATE": return <PlusCircle className="text-emerald-500" size={16} />;
-      case "UPDATE": return <PencilLine className="text-blue-500" size={16} />;
-      case "DELETE": return <Trash2 className="text-rose-500" size={16} />;
-      case "IN": return <ClipboardPlus className="text-emerald-500" size={16} />;
-      case "OUT": return <ArrowRightLeft className="text-amber-500" size={16} />;
-      case "WASTE": return <Donut className="text-rose-500 font-bold" size={16} />;
-      default: return <History size={16} />;
-    }
-  };
-
-  const getActionLabel = (action: string) => {
-    switch (action) {
-      case "CREATE": return "Stok Oluşturma";
-      case "UPDATE": return "Güncelleme";
-      case "DELETE": return "Silme İşlemi";
-      case "IN": return "Stok Girişi";
-      case "OUT": return "Stok Çıkışı";
-      case "WASTE": return "Zayiat Kaydı";
-      default: return action;
-    }
-  };
-
-  if (isLoading) return <div className="p-8 text-center text-slate-400 italic">Loglar yükleniyor...</div>;
+  if (isLoading) return <div className="p-8 text-center italic text-slate-400">Loglar yukleniyor...</div>;
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden mt-8">
-      <div className="p-6 border-b border-slate-50 flex items-center gap-2">
+    <div className="mt-8 overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
+      <div className="flex items-center gap-2 border-b border-slate-50 p-6">
         <History size={20} className="text-indigo-600" />
-        <h2 className="text-lg font-bold text-slate-800">Son İşlem Hareketleri</h2>
+        <h2 className="text-lg font-bold text-slate-800">Son Islem Hareketleri</h2>
       </div>
 
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="bg-slate-50 text-slate-500 font-bold uppercase text-[10px] tracking-widest">
+          <thead className="bg-slate-50 text-[10px] font-bold uppercase tracking-widest text-slate-500">
             <tr>
-              <th className="px-6 py-3 text-left">İşlem</th>
+              <th className="px-6 py-3 text-left">Islem</th>
               <th className="px-6 py-3 text-left">Malzeme</th>
               <th className="px-6 py-3 text-left">Miktar</th>
               <th className="px-6 py-3 text-left">Detay</th>
@@ -93,11 +73,13 @@ export default function ActivityLogList({ refreshTrigger, limit }: ActivityLogLi
           <tbody className="divide-y divide-slate-50">
             {logs.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-6 py-8 text-center text-slate-400">Henüz işlem kaydı bulunmuyor.</td>
+                <td colSpan={5} className="px-6 py-8 text-center text-slate-400">
+                  Henuz islem kaydi bulunmuyor.
+                </td>
               </tr>
             ) : (
               logs.map((log) => (
-                <tr key={log.id} className="hover:bg-slate-50 transition-colors">
+                <tr key={log.id} className="transition-colors hover:bg-slate-50">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
                       {getActionIcon(log.action)}
@@ -107,13 +89,22 @@ export default function ActivityLogList({ refreshTrigger, limit }: ActivityLogLi
                   <td className="px-6 py-4 font-medium text-slate-600">{log.ingredientName}</td>
                   <td className="px-6 py-4">
                     {log.quantity !== null && log.quantity !== undefined ? (
-                      <span className={`font-mono font-bold ${log.action === 'IN' || log.action === 'CREATE' ? 'text-emerald-600' : 'text-slate-600'}`}>
-                        {log.action === 'IN' || log.action === 'CREATE' ? '+' : '-'}{log.quantity}
+                      <span
+                        className={`font-mono font-bold ${
+                          log.action === "IN" || log.action === "CREATE"
+                            ? "text-emerald-600"
+                            : "text-slate-600"
+                        }`}
+                      >
+                        {log.action === "IN" || log.action === "CREATE" ? "+" : "-"}
+                        {log.quantity}
                       </span>
-                    ) : "-"}
+                    ) : (
+                      "-"
+                    )}
                   </td>
-                  <td className="px-6 py-4 text-slate-400 italic text-xs">{log.details}</td>
-                  <td className="px-6 py-4 text-right text-slate-400 text-xs">
+                  <td className="px-6 py-4 text-xs italic text-slate-400">{log.details}</td>
+                  <td className="px-6 py-4 text-right text-xs text-slate-400">
                     {log.createdAt ? new Date(log.createdAt).toLocaleString("tr-TR") : "-"}
                   </td>
                 </tr>

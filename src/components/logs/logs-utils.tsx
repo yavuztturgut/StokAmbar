@@ -6,7 +6,7 @@ import {
   Trash2,
   Donut,
   ClipboardPlus,
-  SquareArrowRight,
+  ArrowRightLeft,
 } from "lucide-react";
 
 export const getVisiblePages = (currentPage: number, totalPages: number) => {
@@ -36,7 +36,7 @@ export const getActionIcon = (action: string) => {
     case "IN":
       return <ClipboardPlus className="text-emerald-500" size={16} />;
     case "OUT":
-      return <SquareArrowRight className="text-amber-500" size={16} />;
+      return <ArrowRightLeft className="text-amber-500" size={16} />;
     case "WASTE":
       return <Donut className="text-rose-500 font-bold" size={16} />;
     default:
@@ -47,11 +47,11 @@ export const getActionIcon = (action: string) => {
 export const getActionLabel = (action: string) => {
   switch (action) {
     case "CREATE":
-      return "Olusturma";
+      return "Stok Olusturma";
     case "UPDATE":
       return "Guncelleme";
     case "DELETE":
-      return "Silme";
+      return "Silme Islemi";
     case "IN":
       return "Stok Girisi";
     case "OUT":

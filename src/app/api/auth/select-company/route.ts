@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { AUTH_COOKIE_NAME, getAuthCookieOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { buildAuthResponse, loadAuthUser, parseSelectionToken } from "@/lib/accountAuth";
+import { createAuthSuccessResponse, loadAuthUser, parseSelectionToken } from "@/lib/accountAuth";
 import { formatZodError, selectCompanySchema } from "@/lib/validation";
 
 export async function POST(request: NextRequest) {
@@ -43,20 +42,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const result = buildAuthResponse(
+    return createAuthSuccessResponse(
       refreshed,
       parsedBody.data.accountId,
       selection.rememberMe ? "30d" : "1d"
     );
-
-    const response = NextResponse.json(result);
-    response.cookies.set(
-      AUTH_COOKIE_NAME,
-      result.token!,
-      getAuthCookieOptions(selection.rememberMe ? 60 * 60 * 24 * 30 : 60 * 60 * 24)
-    );
-
-    return response;
   } catch (error) {
     console.error("Sirket secme hatasi:", error);
     return NextResponse.json(

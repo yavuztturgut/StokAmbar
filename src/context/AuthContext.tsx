@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { clientRequest } from '@/lib/clientApi';
 import { Account, AuthResponse, User } from '@/types';
 
 interface RegisterData {
@@ -16,6 +17,12 @@ interface PendingSelection {
   user: User;
   accounts: Account[];
   selectionToken: string;
+}
+
+interface ProfileResponse {
+  user: User;
+  activeAccount: Account;
+  accounts: Account[];
 }
 
 interface AuthContextType {
@@ -61,19 +68,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setPendingSelection(null);
   };
 
+  const applyProfile = (data: ProfileResponse) => {
+    setUser(data.user);
+    setActiveAccount(data.activeAccount);
+    setAccounts(data.accounts || []);
+    setIsAuthenticated(true);
+  };
+
   const fetchProfile = async () => {
     try {
-      const response = await fetch('/api/auth/profile', { credentials: 'same-origin' });
-      if (!response.ok) {
-        clearSession();
-        return;
-      }
-
-      const data = await response.json();
-      setUser(data.user);
-      setActiveAccount(data.activeAccount);
-      setAccounts(data.accounts || []);
-      setIsAuthenticated(true);
+      const data = await clientRequest<ProfileResponse>(
+        '/api/auth/profile',
+        undefined,
+        'Profil yuklenemedi'
+      );
+      applyProfile(data);
     } catch (error) {
       console.error('Profil yukleme hatasi:', error);
       clearSession();
@@ -89,19 +98,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string, rememberMe: boolean = false) => {
     setIsLoading(true);
     try {
-      const response = await fetch('/api/auth/login', {
+      const data = await clientRequest<AuthResponse>('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'same-origin',
         body: JSON.stringify({ email, password, rememberMe }),
-      });
-
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Giris basarisiz');
-      }
+      }, 'Giris basarisiz');
 
       if (data.requiresCompanySelection) {
+        if (!data.selectionToken) {
+          throw new Error('Sirket secim tokeni alinamadi');
+        }
         setPendingSelection({
           user: data.user,
           accounts: data.accounts || [],
@@ -128,19 +134,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     setIsLoading(true);
     try {
-      const response = await fetch('/api/auth/select-company', {
+      const data = await clientRequest<AuthResponse>('/api/auth/select-company', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'same-origin',
         body: JSON.stringify({
           selectionToken: pendingSelection.selectionToken,
           accountId,
         }),
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Sirket secimi basarisiz');
-      }
+      }, 'Sirket secimi basarisiz');
       applySession(data);
     } finally {
       setIsLoading(false);
@@ -148,32 +149,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const switchAccount = async (accountId: number) => {
-    const response = await fetch('/api/auth/switch-account', {
+    const data = await clientRequest<AuthResponse>('/api/auth/switch-account', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      credentials: 'same-origin',
       body: JSON.stringify({ accountId }),
-    });
-    const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data.error || 'Sirket degistirilemedi');
-    }
+    }, 'Sirket degistirilemedi');
     applySession(data);
   };
 
   const register = async (data: RegisterData) => {
     setIsLoading(true);
     try {
-      const response = await fetch('/api/auth/register', {
+      const result = await clientRequest<AuthResponse>('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'same-origin',
         body: JSON.stringify(data),
-      });
-      const result = await response.json();
-      if (!response.ok) {
-        throw new Error(result.error || 'Kayit basarisiz');
-      }
+      }, 'Kayit basarisiz');
       applySession(result);
     } finally {
       setIsLoading(false);
@@ -181,55 +172,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const refreshProfile = async () => {
-    const response = await fetch('/api/auth/profile', { credentials: 'same-origin' });
-    const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data.error || 'Profil yenilenemedi');
-    }
-    setUser(data.user);
-    setActiveAccount(data.activeAccount);
-    setAccounts(data.accounts || []);
-    setIsAuthenticated(true);
+    const data = await clientRequest<ProfileResponse>(
+      '/api/auth/profile',
+      undefined,
+      'Profil yenilenemedi'
+    );
+    applyProfile(data);
   };
 
   const createAccount = async (data: { name: string; email: string; phone?: string }) => {
-    const response = await fetch('/api/accounts', {
+    await clientRequest('/api/accounts', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      credentials: 'same-origin',
       body: JSON.stringify(data),
-    });
-    const result = await response.json();
-    if (!response.ok) {
-      throw new Error(result.error || 'Sirket olusturulamadi');
-    }
+    }, 'Sirket olusturulamadi');
     await refreshProfile();
   };
 
   const updateAccount = async (id: number, data: { name?: string; email?: string; phone?: string }) => {
-    const response = await fetch(`/api/accounts/${id}`, {
+    await clientRequest(`/api/accounts/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      credentials: 'same-origin',
       body: JSON.stringify(data),
-    });
-    const result = await response.json();
-    if (!response.ok) {
-      throw new Error(result.error || 'Sirket guncellenemedi');
-    }
+    }, 'Sirket guncellenemedi');
     await refreshProfile();
   };
 
   const deleteAccount = async (id: number) => {
-    const response = await fetch(`/api/accounts/${id}`, {
+    const result = await clientRequest<AuthResponse | { success: boolean }>(`/api/accounts/${id}`, {
       method: 'DELETE',
-      credentials: 'same-origin',
-    });
-    const result = await response.json();
-    if (!response.ok) {
-      throw new Error(result.error || 'Sirket silinemedi');
-    }
-    if (result.activeAccount && result.accounts) {
+    }, 'Sirket silinemedi');
+    if ('activeAccount' in result && 'accounts' in result) {
       applySession(result);
       return;
     }
@@ -238,7 +211,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     try {
-      await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' });
+      await clientRequest('/api/auth/logout', { method: 'POST' }, 'Cikis yapilamadi');
     } catch (error) {
       console.error('Logout hatasi:', error);
     }

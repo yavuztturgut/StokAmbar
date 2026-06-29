@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { AUTH_COOKIE_NAME, getAuthCookieOptions } from "@/lib/auth";
-import { buildAuthResponse, loadAuthUser, serializeAccount } from "@/lib/accountAuth";
+import { createAuthSuccessResponse, loadAuthUser, serializeAccount } from "@/lib/accountAuth";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/authMiddleware";
 import { accountUpdateSchema, formatZodError } from "@/lib/validation";
@@ -93,10 +92,7 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
       return NextResponse.json({ success: true });
     }
 
-    const result = buildAuthResponse(user, nextActiveId);
-    const response = NextResponse.json(result);
-    response.cookies.set(AUTH_COOKIE_NAME, result.token!, getAuthCookieOptions(60 * 60 * 24));
-    return response;
+    return createAuthSuccessResponse(user, nextActiveId, "1d");
   } catch (error) {
     console.error("Sirket silme hatasi:", error);
     return NextResponse.json({ error: "Sirket silinemedi" }, { status: 500 });

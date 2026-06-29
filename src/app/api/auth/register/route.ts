@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { AUTH_COOKIE_NAME, getAuthCookieOptions, hashPassword } from "@/lib/auth";
-import { buildAuthResponse, loadAuthUser } from "@/lib/accountAuth";
+import { hashPassword } from "@/lib/auth";
+import { createAuthSuccessResponse, loadAuthUser } from "@/lib/accountAuth";
 import { formatZodError, registerSchema } from "@/lib/validation";
 
 export async function POST(request: NextRequest) {
@@ -58,10 +58,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Kayit sonrasi kullanici bulunamadi" }, { status: 500 });
     }
 
-    const result = buildAuthResponse(user, account.id);
-    const response = NextResponse.json(result);
-    response.cookies.set(AUTH_COOKIE_NAME, result.token!, getAuthCookieOptions(60 * 60 * 24 * 7));
-    return response;
+    return createAuthSuccessResponse(user, account.id, "7d");
   } catch (error) {
     console.error("Kayit hatasi:", error);
     return NextResponse.json({ error: "Kayit sirasinda bir hata olustu" }, { status: 500 });

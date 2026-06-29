@@ -1,10 +1,11 @@
 "use client";
 
 import React, { useState } from "react";
-import { X, Save, Trash2, AlertTriangle } from "lucide-react";
+import { Save, Trash2, X } from "lucide-react";
+import toast from "react-hot-toast";
+import { clientRequest } from "@/lib/clientApi";
 import { Ingredient } from "@/types";
 import ConfirmModal from "./ConfirmModal";
-import toast from "react-hot-toast";
 
 interface EditStockModalProps {
   ingredient: Ingredient;
@@ -27,24 +28,25 @@ export default function EditStockModal({ ingredient, onSuccess, onClose }: EditS
     setIsSubmitting(true);
 
     try {
-      const response = await fetch(`/api/ingredients/${ingredient.id}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
+      await clientRequest(
+        `/api/ingredients/${ingredient.id}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(formData),
         },
-        credentials: "same-origin",
-        body: JSON.stringify(formData),
-      });
+        "Guncelleme sirasinda bir hata olustu"
+      );
 
-      if (response.ok) {
-        toast.success("Malzeme güncellendi");
-        onSuccess();
-        onClose();
-      } else {
-        toast.error("Güncelleme sırasında bir hata oluştu");
-      }
+      toast.success("Malzeme guncellendi");
+      onSuccess();
+      onClose();
     } catch (error) {
       console.error(error);
+      const message = error instanceof Error ? error.message : "Guncelleme sirasinda bir hata olustu";
+      toast.error(message);
     } finally {
       setIsSubmitting(false);
     }
@@ -53,21 +55,23 @@ export default function EditStockModal({ ingredient, onSuccess, onClose }: EditS
   const handleDelete = async () => {
     toast.dismiss();
     setIsSubmitting(true);
-    try {
-      const response = await fetch(`/api/ingredients/${ingredient.id}`, {
-        method: "DELETE",
-        credentials: "same-origin",
-      });
 
-      if (response.ok) {
-        toast.success("Malzeme başarıyla silindi");
-        onSuccess();
-        onClose();
-      } else {
-        toast.error("Silme işlemi başarısız oldu");
-      }
+    try {
+      await clientRequest(
+        `/api/ingredients/${ingredient.id}`,
+        {
+          method: "DELETE",
+        },
+        "Silme islemi basarisiz oldu"
+      );
+
+      toast.success("Malzeme basariyla silindi");
+      onSuccess();
+      onClose();
     } catch (error) {
       console.error(error);
+      const message = error instanceof Error ? error.message : "Silme islemi basarisiz oldu";
+      toast.error(message);
     } finally {
       setIsSubmitting(false);
     }
@@ -83,23 +87,23 @@ export default function EditStockModal({ ingredient, onSuccess, onClose }: EditS
       }}
     >
       <div
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-modal-content"
+        className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl animate-modal-content"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-          <h3 className="text-xl font-bold text-slate-800">Malzemeyi Düzenle</h3>
+        <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/50 p-6">
+          <h3 className="text-xl font-bold text-slate-800">Malzemeyi Duzenle</h3>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
             <X size={20} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 p-6">
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1">Malzeme Adı</label>
+            <label className="mb-1 block text-sm font-semibold text-slate-700">Malzeme Adi</label>
             <input
               required
               type="text"
-              className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500/20 outline-none"
+              className="w-full rounded-xl border border-slate-200 px-4 py-2 outline-none focus:ring-2 focus:ring-indigo-500/20"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
             />
@@ -107,9 +111,9 @@ export default function EditStockModal({ ingredient, onSuccess, onClose }: EditS
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1">Birim</label>
+              <label className="mb-1 block text-sm font-semibold text-slate-700">Birim</label>
               <select
-                className="w-full px-4 py-2 rounded-xl border border-slate-200 bg-white"
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2"
                 value={formData.unit}
                 onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
               >
@@ -120,29 +124,34 @@ export default function EditStockModal({ ingredient, onSuccess, onClose }: EditS
               </select>
             </div>
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1">Min. Stok</label>
+              <label className="mb-1 block text-sm font-semibold text-slate-700">Min. Stok</label>
               <input
                 type="number"
-                className="w-full px-4 py-2 rounded-xl border border-slate-200"
+                className="w-full rounded-xl border border-slate-200 px-4 py-2"
                 value={formData.minStockLevel}
-                onChange={(e) => setFormData({ ...formData, minStockLevel: parseFloat(e.target.value) })}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    minStockLevel: Number.parseFloat(e.target.value) || 0,
+                  })
+                }
               />
             </div>
           </div>
 
-          <div className="pt-6 flex flex-col gap-3">
+          <div className="flex flex-col gap-3 pt-6">
             <button
               disabled={isSubmitting}
               type="submit"
-              className="w-full px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-100"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 font-bold text-white shadow-lg shadow-indigo-100 transition-all hover:bg-indigo-700"
             >
-              <Save size={18} /> Güncelle
+              <Save size={18} /> Guncelle
             </button>
             <button
               type="button"
               disabled={isSubmitting}
               onClick={() => setIsDeleteModalOpen(true)}
-              className="w-full px-6 py-3 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 font-bold transition-all flex items-center justify-center gap-2 border border-rose-100 mt-2"
+              className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-rose-100 bg-rose-50 px-6 py-3 font-bold text-rose-600 transition-all hover:bg-rose-100"
             >
               <Trash2 size={18} /> Malzemeyi Tamamen Sil
             </button>
@@ -155,8 +164,8 @@ export default function EditStockModal({ ingredient, onSuccess, onClose }: EditS
         onClose={() => setIsDeleteModalOpen(false)}
         onConfirm={handleDelete}
         title="Malzemeyi Sil?"
-        message={`${ingredient.name} malzemesini ve buna bağlı tüm stok hareketlerini kalıcı olarak silmek istediğinize emin misiniz? Bu işlem geri alınamaz.`}
-        confirmLabel="Kalıcı Olarak Sil"
+        message={`${ingredient.name} malzemesini ve buna bagli tum stok hareketlerini kalici olarak silmek istediginize emin misiniz? Bu islem geri alinamaz.`}
+        confirmLabel="Kalici Olarak Sil"
         isDanger={true}
       />
     </div>

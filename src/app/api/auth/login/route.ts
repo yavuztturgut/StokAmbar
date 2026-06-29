@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
   verifyPassword,
-  AUTH_COOKIE_NAME,
-  getAuthCookieOptions,
 } from "@/lib/auth";
 import { formatZodError, loginSchema } from "@/lib/validation";
 import {
-  buildAuthResponse,
+  createAuthSuccessResponse,
   listAccounts,
   loadAuthUser,
   serializeUser,
@@ -60,17 +58,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const result = buildAuthResponse(user, accounts[0].id, rememberMe ? "30d" : "1d");
-
-    const response = NextResponse.json(result);
-
-    response.cookies.set(
-      AUTH_COOKIE_NAME,
-      result.token!,
-      getAuthCookieOptions(rememberMe ? 60 * 60 * 24 * 30 : 60 * 60 * 24)
-    );
-
-    return response;
+    return createAuthSuccessResponse(user, accounts[0].id, rememberMe ? "30d" : "1d");
   } catch (error) {
     console.error("Giriş hatası:", error);
     return NextResponse.json(

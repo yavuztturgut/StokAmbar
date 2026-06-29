@@ -1,5 +1,6 @@
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { generateToken, verifyToken } from "@/lib/auth";
+import { AUTH_COOKIE_NAME, generateToken, getAuthCookieOptions, verifyToken } from "@/lib/auth";
 
 export const authUserInclude = {
   account: true,
@@ -94,7 +95,7 @@ export const buildAuthResponse = (user: {
     createdAt: Date;
     updatedAt: Date;
   }>;
-}, activeAccountId: number, expiresIn: "1d" | "30d" = "1d") => {
+}, activeAccountId: number, expiresIn: "1d" | "7d" | "30d" = "1d") => {
   const activeAccount = user.ownedAccounts.find((item) => item.id === activeAccountId) ?? user.account;
   if (!activeAccount) {
     throw new Error("Active account not found");
@@ -120,6 +121,53 @@ export const buildAuthResponse = (user: {
     activeAccount: serializeAccount(activeAccount),
     accounts: listAccounts(user),
   };
+};
+
+export const createAuthSuccessResponse = (
+  user: {
+    id: number;
+    email: string;
+    username: string;
+    accountId: number | null;
+    createdAt: Date;
+    account: null | {
+      id: number;
+      ownerId: number;
+      name: string;
+      email: string;
+      phone: string | null;
+      createdAt: Date;
+      updatedAt: Date;
+    };
+    ownedAccounts: Array<{
+      id: number;
+      ownerId: number;
+      name: string;
+      email: string;
+      phone: string | null;
+      createdAt: Date;
+      updatedAt: Date;
+    }>;
+  },
+  activeAccountId: number,
+  expiresIn: "1d" | "7d" | "30d" = "1d"
+) => {
+  const result = buildAuthResponse(user, activeAccountId, expiresIn);
+  const maxAge =
+    expiresIn === "30d"
+      ? 60 * 60 * 24 * 30
+      : expiresIn === "7d"
+        ? 60 * 60 * 24 * 7
+        : 60 * 60 * 24;
+  const response = NextResponse.json(result);
+
+  response.cookies.set(
+    AUTH_COOKIE_NAME,
+    result.token!,
+    getAuthCookieOptions(maxAge)
+  );
+
+  return response;
 };
 
 export const signSelectionToken = (userId: number, accountIds: number[], rememberMe: boolean) =>
