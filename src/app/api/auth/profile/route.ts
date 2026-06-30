@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/authMiddleware";
 import { formatZodError, profileUpdateSchema } from "@/lib/validation";
-import { buildAuthResponse, listAccounts, loadAuthUser, serializeAccount, serializeUser } from "@/lib/accountAuth";
+import { createAuthSuccessResponse, listAccounts, loadAuthUser, serializeAccount, serializeUser } from "@/lib/accountAuth";
+import { enforcePostAuthRateLimit, withRateLimitHeaders } from "@/lib/rateLimit";
 
 export async function GET(request: NextRequest) {
   try {
@@ -41,26 +43,47 @@ export async function PUT(request: NextRequest) {
       return payload;
     }
 
+    const rateLimit = await enforcePostAuthRateLimit({
+      scope: "auth:profile-update",
+      request,
+    });
+    if (rateLimit instanceof NextResponse) {
+      return rateLimit;
+    }
+
+    const respond = (body: unknown, status: number) =>
+      withRateLimitHeaders(NextResponse.json(body, { status }), rateLimit);
+
     const parsedBody = profileUpdateSchema.safeParse(await request.json());
     if (!parsedBody.success) {
-      return NextResponse.json({ error: formatZodError(parsedBody.error) }, { status: 400 });
+      return respond({ error: formatZodError(parsedBody.error) }, 400);
     }
 
     const user = await loadAuthUser({ id: payload.userId });
     if (!user) {
-      return NextResponse.json({ error: "Kullanici bulunamadi" }, { status: 404 });
+      return respond({ error: "Kullanici bulunamadi" }, 404);
     }
 
     const nextAccountId = parsedBody.data.activeAccountId;
     if (nextAccountId === undefined) {
-      return NextResponse.json({ error: 'Gecerli bir sirket secin' }, { status: 400 });
+      return respond({ error: "Gecerli bir sirket secin" }, 400);
     }
 
     if (!user.ownedAccounts.some((item) => item.id === nextAccountId)) {
-      return NextResponse.json({ error: "Secilen sirket bu kullaniciya ait degil" }, { status: 403 });
+      return respond({ error: "Secilen sirket bu kullaniciya ait degil" }, 403);
     }
 
-    return NextResponse.json(buildAuthResponse(user, nextAccountId));
+    await prisma.user.update({
+      where: { id: payload.userId },
+      data: { accountId: nextAccountId },
+    });
+
+    const refreshed = await loadAuthUser({ id: payload.userId });
+    if (!refreshed) {
+      return respond({ error: "Kullanici bulunamadi" }, 404);
+    }
+
+    return withRateLimitHeaders(createAuthSuccessResponse(refreshed, nextAccountId, "1d"), rateLimit);
   } catch (error) {
     console.error("Profil guncelleme hatasi:", error);
     return NextResponse.json({ error: "Profil guncellenemedi" }, { status: 500 });

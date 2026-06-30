@@ -1,0 +1,24 @@
+BEGIN TRY
+
+BEGIN TRAN;
+
+ALTER TABLE [dbo].[User]
+ADD [tokenVersion] INT NOT NULL CONSTRAINT [User_tokenVersion_df] DEFAULT 0;
+
+IF OBJECT_ID(N'[dbo].[RateLimitChallenge]', N'U') IS NOT NULL
+BEGIN
+  DROP TABLE [dbo].[RateLimitChallenge];
+END;
+
+COMMIT TRAN;
+
+END TRY
+BEGIN CATCH
+
+IF @@TRANCOUNT > 0
+BEGIN
+    ROLLBACK TRAN;
+END;
+THROW
+
+END CATCH

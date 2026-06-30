@@ -3,9 +3,15 @@ import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/authMiddleware";
 import { sendLowStockEmail } from "@/lib/email";
 import { formatZodError, transactionSchema } from "@/lib/validation";
+import { enforcePostAuthRateLimit, withRateLimitHeaders } from "@/lib/rateLimit";
 
 export async function POST(req: NextRequest) {
   try {
+    const rateLimit = await enforcePostAuthRateLimit({ scope: "transactions:create", request: req });
+    if (rateLimit instanceof NextResponse) {
+      return rateLimit;
+    }
+
     const payload = await requireAuth(req);
 
     if (payload instanceof NextResponse) {
@@ -14,10 +20,10 @@ export async function POST(req: NextRequest) {
 
     const parsedBody = transactionSchema.safeParse(await req.json());
     if (!parsedBody.success) {
-      return NextResponse.json(
+      return withRateLimitHeaders(NextResponse.json(
         { error: formatZodError(parsedBody.error) },
         { status: 400 }
-      );
+      ), rateLimit);
     }
 
     const { ingredientId, type, quantity, note } = parsedBody.data;
@@ -101,7 +107,7 @@ export async function POST(req: NextRequest) {
       ).catch((error) => console.error("[Email API Error]:", error));
     }
 
-    return NextResponse.json(result);
+    return withRateLimitHeaders(NextResponse.json(result), rateLimit);
   } catch (error: unknown) {
     console.error("Transaction Error:", error);
     const message = error instanceof Error ? error.message : "Unknown error";

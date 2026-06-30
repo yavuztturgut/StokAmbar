@@ -3,7 +3,7 @@
 import React from "react";
 import { Search, Filter, ArrowUpDown, RotateCcw } from "lucide-react";
 
-type ActionFilter = "ALL" | "CREATE" | "UPDATE" | "DELETE" | "IN" | "OUT" | "WASTE";
+type ActionFilter = "ALL" | "CREATE" | "UPDATE" | "DELETE" | "IN" | "OUT" | "WASTE" | "ADJUSTMENT";
 type AmountDirection = "ALL" | "INCREASE" | "DECREASE";
 type SortOrder = "newest" | "oldest";
 
@@ -77,6 +77,7 @@ export default function LogsFilters({
               <option value="IN">Giris</option>
               <option value="OUT">Cikis</option>
               <option value="WASTE">Zayiat</option>
+              <option value="ADJUSTMENT">Sayim duzeltmesi</option>
             </select>
           </div>
 

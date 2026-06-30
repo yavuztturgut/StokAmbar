@@ -2,6 +2,7 @@ import { NextResponse, NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/authMiddleware";
 import { formatZodError, ingredientUpdateSchema } from "@/lib/validation";
+import { enforcePostAuthRateLimit, withRateLimitHeaders } from "@/lib/rateLimit";
 
 export async function PATCH(
   req: NextRequest,
@@ -14,31 +15,42 @@ export async function PATCH(
       return payload;
     }
 
+    const rateLimit = await enforcePostAuthRateLimit({
+      scope: "ingredients:write",
+      request: req,
+    });
+    if (rateLimit instanceof NextResponse) {
+      return rateLimit;
+    }
+
+    const respond = (body: unknown, status: number) =>
+      withRateLimitHeaders(NextResponse.json(body, { status }), rateLimit);
+
     const { id: idStr } = await params;
     const id = Number.parseInt(idStr, 10);
     const parsedBody = ingredientUpdateSchema.safeParse(await req.json());
 
     if (!parsedBody.success) {
-      return NextResponse.json(
-        { error: formatZodError(parsedBody.error) },
-        { status: 400 }
-      );
+      return respond({ error: formatZodError(parsedBody.error) }, 400);
     }
 
-    const { name, minStockLevel, unit } = parsedBody.data;
+    const { name, category, sku, supplier, minStockLevel, unit } = parsedBody.data;
 
     const ingredient = await prisma.ingredient.findUnique({
       where: { id },
     });
 
     if (!ingredient || ingredient.accountId !== payload.accountId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+      return respond({ error: "Unauthorized" }, 403);
     }
 
     const updated = await prisma.ingredient.update({
       where: { id },
       data: {
         name,
+        category: category || null,
+        sku: sku || null,
+        supplier: supplier || null,
         unit,
         minStockLevel,
       },
@@ -50,7 +62,7 @@ export async function PATCH(
           action: "UPDATE",
           ingredientId: id,
           ingredientName: updated.name,
-          details: `Ad: ${name}, Birim: ${unit}, Min: ${minStockLevel}`,
+          details: `Ad: ${name}, Kategori: ${category || "-"}, SKU: ${sku || "-"}, Tedarikci: ${supplier || "-"}, Birim: ${unit}, Min: ${minStockLevel}`,
           accountId: payload.accountId,
         },
       });
@@ -58,7 +70,7 @@ export async function PATCH(
       console.error("Log error (Update):", error);
     }
 
-    return NextResponse.json(updated);
+    return withRateLimitHeaders(NextResponse.json(updated), rateLimit);
   } catch (error: unknown) {
     console.error("Update Error:", error);
     return NextResponse.json(
@@ -82,17 +94,28 @@ export async function DELETE(
       return payload;
     }
 
+    const rateLimit = await enforcePostAuthRateLimit({
+      scope: "ingredients:write",
+      request: req,
+    });
+    if (rateLimit instanceof NextResponse) {
+      return rateLimit;
+    }
+
+    const respond = (body: unknown, status: number) =>
+      withRateLimitHeaders(NextResponse.json(body, { status }), rateLimit);
+
     const { id: idStr } = await params;
     const id = Number.parseInt(idStr, 10);
 
     const ingredient = await prisma.ingredient.findUnique({ where: { id } });
 
     if (!ingredient) {
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
+      return respond({ error: "Not found" }, 404);
     }
 
     if (ingredient.accountId !== payload.accountId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+      return respond({ error: "Unauthorized" }, 403);
     }
 
     try {
@@ -117,7 +140,7 @@ export async function DELETE(
       where: { id },
     });
 
-    return NextResponse.json({ success: true });
+    return withRateLimitHeaders(NextResponse.json({ success: true }), rateLimit);
   } catch (error: unknown) {
     console.error("Delete Error:", error);
     return NextResponse.json(

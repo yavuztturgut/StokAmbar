@@ -16,6 +16,7 @@ export default function Navbar() {
 
   const navLinks = [
     { name: "Dashboard", href: "/" },
+    { name: "Sayim", href: "/counts" },
     { name: "Log", href: "/logs" },
   ];
 

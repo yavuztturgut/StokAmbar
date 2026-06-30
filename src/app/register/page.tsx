@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { UserPlus, Package, ArrowRight, Eye, EyeOff, Building, Phone, Mail, User, Zap } from 'lucide-react';
@@ -10,17 +10,17 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 const slides = [
   {
-    title: "İşletmenizi Büyütmeye Başlayın",
-    description: "Hemen kayıt olun ve stok yönetimi süreçlerinizi dijitalleştirerek zaman kazanın.",
-    image: "/assets/images/login-carousel-1.png",
-    icon: <UserPlus className="w-5 h-5" />
+    title: 'Isletmenizi Buyutmeye Baslayin',
+    description: 'Hemen kayit olun ve stok yonetimi sureclerinizi dijitallestirerek zaman kazanin.',
+    image: '/assets/images/login-carousel-1.png',
+    icon: <UserPlus className="h-5 w-5" />,
   },
   {
-    title: "Kolay ve Hızlı Entegrasyon",
-    description: "Kullanıcı dostu arayüz ve hızlı kurulum ile saniyeler içinde kullanmaya başlayın.",
-    image: "/assets/images/login-carousel-2.png",
-    icon: <Zap className="w-5 h-5" />
-  }
+    title: 'Kolay ve Hizli Entegrasyon',
+    description: 'Kullanici dostu arayuz ve hizli kurulum ile saniyeler icinde kullanmaya baslayin.',
+    image: '/assets/images/login-carousel-2.png',
+    icon: <Zap className="h-5 w-5" />,
+  },
 ];
 
 export default function RegisterPage() {
@@ -47,27 +47,27 @@ export default function RegisterPage() {
     return () => clearInterval(timer);
   }, []);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = event.target;
     setFormData((prev) => ({
       ...prev,
       [name]: value,
     }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
     setIsLoading(true);
 
     try {
       if (formData.password !== formData.confirmPassword) {
-        toast.error('Şifreler uyuşmuyor');
+        toast.error('Sifreler uyusmuyor');
         setIsLoading(false);
         return;
       }
 
       if (formData.password.length < 6) {
-        toast.error('Şifre en az 6 karakter olmalı');
+        toast.error('Sifre en az 6 karakter olmali');
         setIsLoading(false);
         return;
       }
@@ -81,37 +81,38 @@ export default function RegisterPage() {
         phone: formData.phone,
       });
 
-      toast.success('Kayıt başarılı! Hoş geldiniz');
+      toast.success('Kayit basarili. Hos geldiniz.');
       router.push('/');
-    } catch (error: any) {
-      toast.error(error.message || 'Kayıt başarısız');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Kayit basarisiz');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const inputClassName = "w-full px-4 py-2 bg-slate-50 border-2 border-slate-100 rounded-xl focus:border-indigo-600 focus:bg-white focus:outline-none transition-all duration-200 text-sm text-slate-800 placeholder:text-slate-400";
+  const inputClassName = 'w-full rounded-xl border-2 border-slate-100 bg-slate-50 px-4 py-2 text-sm text-slate-800 transition-all duration-200 placeholder:text-slate-400 focus:border-indigo-600 focus:bg-white focus:outline-none';
 
   return (
-    <div className="flex xl:h-screen bg-white font-sans selection:bg-indigo-100 overflow-hidden">
-      {/* Left Side: Form */}
-      <div className="flex flex-col justify-center w-full px-8 py-0 lg:w-[50%] md:px-16 lg:px-20 overflow-y-auto">
-        <div className="max-w-2xl w-full mx-auto pb-0">
+    <div className="flex overflow-hidden bg-white font-sans selection:bg-indigo-100 xl:h-screen">
+      <div className="flex w-full flex-col justify-center overflow-y-auto px-8 py-0 md:px-16 lg:w-[50%] lg:px-20">
+        <div className="mx-auto w-full max-w-2xl pb-0">
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6 }}
             className="mb-4 mt-0"
           >
-            <div className="flex items-center gap-2 mb-4 group cursor-pointer w-fit">
-              <div className="p-2 transition-transform duration-300 bg-indigo-600 rounded-lg shadow-lg group-hover:rotate-12">
+            <div className="group mb-4 flex w-fit cursor-pointer items-center gap-2">
+              <div className="rounded-lg bg-indigo-600 p-2 shadow-lg transition-transform duration-300 group-hover:rotate-12">
                 <Package size={24} className="text-white" />
               </div>
-              <span className="text-xl font-black tracking-tight text-slate-900">Stok<span className="text-indigo-600">Takip</span></span>
+              <span className="text-xl font-black tracking-tight text-slate-900">
+                Stok<span className="text-indigo-600">Takip</span>
+              </span>
             </div>
 
-            <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 mb-1">Yeni Hesap Oluştur</h1>
-            <p className="text-base text-slate-500 font-medium">Sistemimizi kullanmaya başlamak için bilgilerinizi girin.</p>
+            <h1 className="mb-1 text-3xl font-extrabold tracking-tight text-slate-900">Yeni Hesap Olustur</h1>
+            <p className="text-base font-medium text-slate-500">Sistemimizi kullanmaya baslamak icin bilgilerinizi girin.</p>
           </motion.div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -120,12 +121,12 @@ export default function RegisterPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2, duration: 0.5 }}
             >
-              <h3 className="text-sm font-bold text-indigo-600 mb-3 uppercase tracking-wider">Kullanıcı Bilgileri</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-3">
+              <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-indigo-600">Kullanici Bilgileri</h3>
+              <div className="grid grid-cols-1 gap-x-4 gap-y-3 md:grid-cols-2">
                 <div>
-                  <label className="block mb-1 text-sm font-bold text-slate-700">Email Adresiniz</label>
+                  <label className="mb-1 block text-sm font-bold text-slate-700">Email Adresiniz</label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+                    <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                     <input
                       type="email"
                       name="email"
@@ -138,9 +139,9 @@ export default function RegisterPage() {
                   </div>
                 </div>
                 <div>
-                  <label className="block mb-1 text-sm font-bold text-slate-700">Kullanıcı Adı</label>
+                  <label className="mb-1 block text-sm font-bold text-slate-700">Kullanici Adi</label>
                   <div className="relative">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+                    <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                     <input
                       type="text"
                       name="username"
@@ -153,42 +154,42 @@ export default function RegisterPage() {
                   </div>
                 </div>
                 <div>
-                  <label className="block mb-1 text-sm font-bold text-slate-700">Şifre</label>
+                  <label className="mb-1 block text-sm font-bold text-slate-700">Sifre</label>
                   <div className="relative">
                     <input
-                      type={showPassword ? "text" : "password"}
+                      type={showPassword ? 'text' : 'password'}
                       name="password"
                       value={formData.password}
                       onChange={handleChange}
                       className={inputClassName}
-                      placeholder="••••••••"
+                      placeholder="........"
                       required
                     />
                     <button
                       type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute text-slate-400 right-3 top-1/2 -translate-y-1/2 hover:text-indigo-600 transition-colors"
+                      onClick={() => setShowPassword((value) => !value)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition-colors hover:text-indigo-600"
                     >
                       {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
                   </div>
                 </div>
                 <div>
-                  <label className="block mb-1 text-sm font-bold text-slate-700">Şifre Tekrar</label>
+                  <label className="mb-1 block text-sm font-bold text-slate-700">Sifre Tekrar</label>
                   <div className="relative">
                     <input
-                      type={showConfirmPassword ? "text" : "password"}
+                      type={showConfirmPassword ? 'text' : 'password'}
                       name="confirmPassword"
                       value={formData.confirmPassword}
                       onChange={handleChange}
                       className={inputClassName}
-                      placeholder="••••••••"
+                      placeholder="........"
                       required
                     />
                     <button
                       type="button"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute text-slate-400 right-3 top-1/2 -translate-y-1/2 hover:text-indigo-600 transition-colors"
+                      onClick={() => setShowConfirmPassword((value) => !value)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition-colors hover:text-indigo-600"
                     >
                       {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
@@ -203,27 +204,27 @@ export default function RegisterPage() {
               transition={{ delay: 0.3, duration: 0.5 }}
               className="pt-1"
             >
-              <h3 className="text-sm font-bold text-indigo-600 mb-3 uppercase tracking-wider">Hesap Bilgileri</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-3">
+              <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-indigo-600">Hesap Bilgileri</h3>
+              <div className="grid grid-cols-1 gap-x-4 gap-y-3 md:grid-cols-2">
                 <div className="md:col-span-2">
-                  <label className="block mb-1 text-sm font-bold text-slate-700">İşletme/Kişi Adı</label>
+                  <label className="mb-1 block text-sm font-bold text-slate-700">Isletme/Kisi Adi</label>
                   <div className="relative">
-                    <Building className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+                    <Building className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                     <input
                       type="text"
                       name="accountName"
                       value={formData.accountName}
                       onChange={handleChange}
                       className={`${inputClassName} pl-10`}
-                      placeholder="ABC Gıda Ltd."
+                      placeholder="ABC Gida Ltd."
                       required
                     />
                   </div>
                 </div>
                 <div>
-                  <label className="block mb-1 text-sm font-bold text-slate-700">Hesap Email</label>
+                  <label className="mb-1 block text-sm font-bold text-slate-700">Hesap Email</label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+                    <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                     <input
                       type="email"
                       name="accountEmail"
@@ -236,9 +237,11 @@ export default function RegisterPage() {
                   </div>
                 </div>
                 <div>
-                  <label className="block mb-1 text-sm font-bold text-slate-700">Telefon <span className="text-slate-400 font-normal">(İsteğe bağlı)</span></label>
+                  <label className="mb-1 block text-sm font-bold text-slate-700">
+                    Telefon <span className="font-normal text-slate-400">(Istege bagli)</span>
+                  </label>
                   <div className="relative">
-                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+                    <Phone className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                     <input
                       type="tel"
                       name="phone"
@@ -263,13 +266,13 @@ export default function RegisterPage() {
                 whileTap={{ scale: 0.98 }}
                 type="submit"
                 disabled={isLoading}
-                className="relative w-full py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white text-sm font-bold rounded-xl shadow-lg shadow-indigo-200 transition-all duration-200 overflow-hidden flex items-center justify-center gap-2 group cursor-pointer"
+                className="group relative flex w-full cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-xl bg-indigo-600 py-3 text-sm font-bold text-white shadow-lg shadow-indigo-200 transition-all duration-200 hover:bg-indigo-700 disabled:bg-indigo-300"
               >
                 {isLoading ? (
-                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
                 ) : (
                   <>
-                    Kayıt Ol
+                    Kayit Ol
                     <ArrowRight size={18} className="transition-transform group-hover:translate-x-1" />
                   </>
                 )}
@@ -281,21 +284,19 @@ export default function RegisterPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.7 }}
-            className="mt-6 text-center text-sm text-slate-500 font-medium"
+            className="mt-6 text-center text-sm font-medium text-slate-500"
           >
-            Zaten hesabınız var mı?{' '}
-            <Link href="/login" className="font-bold text-indigo-600 hover:text-indigo-700 border-b-2 border-indigo-100 hover:border-indigo-600 transition-all px-0.5">
-              Giriş Yap
+            Zaten hesabiniz var mi?{' '}
+            <Link href="/login" className="border-b-2 border-indigo-100 px-0.5 font-bold text-indigo-600 transition-all hover:border-indigo-600 hover:text-indigo-700">
+              Giris Yap
             </Link>
           </motion.p>
         </div>
       </div>
 
-      {/* Right Side: Carousel */}
-      <div className="hidden lg:flex lg:w-[55%] bg-slate-50 relative overflow-hidden items-center justify-center p-12 sticky top-0 h-screen">
-        {/* Animated blobs background */}
-        <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-[600px] h-[600px] bg-indigo-100/50 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-0 left-0 translate-y-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-purple-100/50 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
+      <div className="sticky top-0 hidden h-screen items-center justify-center overflow-hidden bg-slate-50 p-12 lg:flex lg:w-[55%]">
+        <div className="absolute right-0 top-0 h-[600px] w-[600px] translate-x-1/2 -translate-y-1/2 animate-pulse rounded-full bg-indigo-100/50 blur-3xl" />
+        <div className="absolute bottom-0 left-0 h-[600px] w-[600px] -translate-x-1/2 translate-y-1/2 animate-pulse rounded-full bg-purple-100/50 blur-3xl" style={{ animationDelay: '2s' }} />
 
         <AnimatePresence mode="wait">
           <motion.div
@@ -303,41 +304,40 @@ export default function RegisterPage() {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.6, ease: "easeInOut" }}
+            transition={{ duration: 0.6, ease: 'easeInOut' }}
             className="relative z-10 w-full max-w-lg px-8 text-center"
           >
             <div className="mb-6 flex justify-center">
-              <div className="relative group">
-                <div className="absolute inset-0 bg-indigo-500 rounded-3xl blur-3xl opacity-10 group-hover:opacity-20 transition-opacity duration-500" />
+              <div className="group relative">
+                <div className="absolute inset-0 rounded-3xl bg-indigo-500 opacity-10 blur-3xl transition-opacity duration-500 group-hover:opacity-20" />
                 <img
                   src={slides[currentSlide].image}
                   alt={slides[currentSlide].title}
-                  className="relative rounded-3xl shadow-2xl object-cover w-full aspect-square max-h-[350px]"
+                  className="relative aspect-square max-h-[350px] w-full rounded-3xl object-cover shadow-2xl"
                 />
               </div>
             </div>
 
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-indigo-600 text-white rounded-full text-[10px] font-black tracking-widest mb-4 shadow-md shadow-indigo-100 uppercase">
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-indigo-600 px-4 py-1.5 text-[10px] font-black uppercase tracking-widest text-white shadow-md shadow-indigo-100">
               {slides[currentSlide].icon}
-              <span>HOŞ GELDİNİZ</span>
+              <span>Hos Geldiniz</span>
             </div>
 
-            <h2 className="text-3xl font-black text-slate-900 mb-3 tracking-tight leading-tight">{slides[currentSlide].title}</h2>
-            <p className="text-base text-slate-500 leading-relaxed mb-8 font-medium">{slides[currentSlide].description}</p>
+            <h2 className="mb-3 text-3xl font-black leading-tight tracking-tight text-slate-900">{slides[currentSlide].title}</h2>
+            <p className="mb-8 text-base font-medium leading-relaxed text-slate-500">{slides[currentSlide].description}</p>
 
             <div className="flex justify-center gap-3">
               {slides.map((_, idx) => (
                 <button
                   key={idx}
                   onClick={() => setCurrentSlide(idx)}
-                  className={`h-2 rounded-full transition-all duration-300 cursor-pointer ${idx === currentSlide ? 'w-10 bg-indigo-600' : 'w-2 bg-indigo-200 hover:bg-indigo-300'}`}
+                  className={`h-2 cursor-pointer rounded-full transition-all duration-300 ${idx === currentSlide ? 'w-10 bg-indigo-600' : 'w-2 bg-indigo-200 hover:bg-indigo-300'}`}
                 />
               ))}
             </div>
           </motion.div>
         </AnimatePresence>
       </div>
-
     </div>
   );
 }

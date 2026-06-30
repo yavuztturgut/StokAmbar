@@ -76,6 +76,7 @@ export const buildAuthResponse = (user: {
   email: string;
   username: string;
   accountId: number | null;
+  tokenVersion: number;
   createdAt: Date;
   account: null | {
     id: number;
@@ -95,7 +96,7 @@ export const buildAuthResponse = (user: {
     createdAt: Date;
     updatedAt: Date;
   }>;
-}, activeAccountId: number, expiresIn: "1d" | "7d" | "30d" = "1d") => {
+}, activeAccountId: number) => {
   const activeAccount = user.ownedAccounts.find((item) => item.id === activeAccountId) ?? user.account;
   if (!activeAccount) {
     throw new Error("Active account not found");
@@ -103,14 +104,6 @@ export const buildAuthResponse = (user: {
 
   return {
     success: true,
-    token: generateToken(
-      {
-        userId: user.id,
-        accountId: activeAccount.id,
-        email: user.email,
-      },
-      expiresIn
-    ),
     user: serializeUser({
       id: user.id,
       email: user.email,
@@ -129,6 +122,7 @@ export const createAuthSuccessResponse = (
     email: string;
     username: string;
     accountId: number | null;
+    tokenVersion: number;
     createdAt: Date;
     account: null | {
       id: number;
@@ -152,7 +146,16 @@ export const createAuthSuccessResponse = (
   activeAccountId: number,
   expiresIn: "1d" | "7d" | "30d" = "1d"
 ) => {
-  const result = buildAuthResponse(user, activeAccountId, expiresIn);
+  const result = buildAuthResponse(user, activeAccountId);
+  const token = generateToken(
+    {
+      userId: user.id,
+      accountId: activeAccountId,
+      email: user.email,
+      tokenVersion: user.tokenVersion,
+    },
+    expiresIn
+  );
   const maxAge =
     expiresIn === "30d"
       ? 60 * 60 * 24 * 30
@@ -163,19 +166,25 @@ export const createAuthSuccessResponse = (
 
   response.cookies.set(
     AUTH_COOKIE_NAME,
-    result.token!,
+    token,
     getAuthCookieOptions(maxAge)
   );
 
   return response;
 };
 
-export const signSelectionToken = (userId: number, accountIds: number[], rememberMe: boolean) =>
+export const signSelectionToken = (
+  userId: number,
+  accountIds: number[],
+  rememberMe: boolean,
+  tokenVersion: number
+) =>
   generateToken(
     {
       userId,
       accountId: 0,
       email: `selection:${accountIds.join(",")}:${rememberMe ? "1" : "0"}`,
+      tokenVersion,
     },
     "1d"
   );
@@ -185,6 +194,7 @@ export const parseSelectionToken = (token: string) => {
   const [, accountList, rememberFlag] = payload.email.split(":");
   return {
     userId: payload.userId,
+    tokenVersion: payload.tokenVersion,
     accountIds: (accountList || "")
       .split(",")
       .map((item) => Number(item))

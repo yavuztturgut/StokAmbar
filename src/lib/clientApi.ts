@@ -1,3 +1,15 @@
+export class ApiError extends Error {
+  status: number;
+  payload: unknown;
+
+  constructor(message: string, status: number, payload: unknown) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.payload = payload;
+  }
+}
+
 export async function clientRequest<T>(
   input: RequestInfo | URL,
   init?: RequestInit,
@@ -24,7 +36,7 @@ export async function clientRequest<T>(
       data && typeof data === "object" && "error" in data && typeof data.error === "string"
         ? data.error
         : defaultError;
-    throw new Error(message);
+    throw new ApiError(message, response.status, data);
   }
 
   return data as T;

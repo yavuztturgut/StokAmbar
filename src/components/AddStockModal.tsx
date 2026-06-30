@@ -13,6 +13,9 @@ interface AddStockModalProps {
 export default function AddStockModal({ onSuccess, onClose }: AddStockModalProps) {
   const [formData, setFormData] = useState({
     name: "",
+    category: "",
+    sku: "",
+    supplier: "",
     unit: "kg",
     currentStock: 0,
     minStockLevel: 0,
@@ -82,6 +85,40 @@ export default function AddStockModal({ onSuccess, onClose }: AddStockModalProps
               className="w-full rounded-xl border border-slate-200 px-4 py-2 transition-all focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div>
+              <label className="mb-1 block text-sm font-semibold text-slate-700">Kategori</label>
+              <input
+                type="text"
+                placeholder="Kuruyemis, Icecek..."
+                className="w-full rounded-xl border border-slate-200 px-4 py-2 transition-all focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                value={formData.category}
+                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-semibold text-slate-700">SKU / Kod</label>
+              <input
+                type="text"
+                placeholder="STK-001"
+                className="w-full rounded-xl border border-slate-200 px-4 py-2 transition-all focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                value={formData.sku}
+                onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-semibold text-slate-700">Tedarikci</label>
+            <input
+              type="text"
+              placeholder="Ornek Tedarikci Ltd."
+              className="w-full rounded-xl border border-slate-200 px-4 py-2 transition-all focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+              value={formData.supplier}
+              onChange={(e) => setFormData({ ...formData, supplier: e.target.value })}
             />
           </div>
 

@@ -13,9 +13,11 @@ model User {
   email         String    @unique
   password      String
   username      String    @unique
+  tokenVersion  Int       @default(0)
   accountId     Int?
   account       Account?  @relation("ActiveAccount", fields: [accountId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   ownedAccounts Account[] @relation("OwnedAccounts")
+  passwordResetTokens PasswordResetToken[]
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -36,6 +38,7 @@ model Account {
   ingredients  Ingredient[]
   transactions StockTransaction[]
   logs         ActivityLog[]
+  stockCounts  StockCountAdjustment[]
 
   @@index([ownerId])
 }
@@ -44,6 +47,9 @@ model Ingredient {
   id            Int      @id @default(autoincrement())
   accountId     Int
   name          String
+  category      String?
+  sku           String?
+  supplier      String?
   unit          String
   currentStock  Float    @default(0)
   minStockLevel Float    @default(0)
@@ -51,8 +57,11 @@ model Ingredient {
   updatedAt     DateTime @updatedAt
   account       Account  @relation(fields: [accountId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   transactions  StockTransaction[]
+  stockCounts   StockCountAdjustment[]
 
   @@index([accountId])
+  @@index([accountId, category])
+  @@index([accountId, sku])
 }
 
 model StockTransaction {
@@ -81,4 +90,47 @@ model ActivityLog {
   account        Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
 
   @@index([accountId])
+}
+
+model PasswordResetToken {
+  id        Int      @id @default(autoincrement())
+  userId     Int
+  tokenHash String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+}
+
+model StockCountAdjustment {
+  id            Int        @id @default(autoincrement())
+  accountId     Int
+  ingredientId  Int
+  expectedStock Float
+  countedStock  Float
+  difference    Float
+  note          String?
+  createdAt     DateTime   @default(now())
+  account       Account    @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  ingredient    Ingredient @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
+
+  @@index([accountId, createdAt])
+  @@index([ingredientId, createdAt])
+}
+
+model RateLimitBucket {
+  id          Int      @id @default(autoincrement())
+  scope       String
+  keyHash     String
+  count       Int      @default(0)
+  windowStart DateTime
+  windowEnd   DateTime
+  lastSeenAt  DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([scope, keyHash])
+  @@index([scope, windowEnd])
 }

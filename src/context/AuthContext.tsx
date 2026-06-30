@@ -38,6 +38,7 @@ interface AuthContextType {
   createAccount: (data: { name: string; email: string; phone?: string }) => Promise<void>;
   updateAccount: (id: number, data: { name?: string; email?: string; phone?: string }) => Promise<void>;
   deleteAccount: (id: number) => Promise<void>;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
   logout: () => Promise<void>;
   isLoading: boolean;
 }
@@ -95,13 +96,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     void fetchProfile();
   }, []);
 
-  const login = async (email: string, password: string, rememberMe: boolean = false) => {
+  const login = async (
+    email: string,
+    password: string,
+    rememberMe: boolean = false
+  ) => {
     setIsLoading(true);
     try {
       const data = await clientRequest<AuthResponse>('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, rememberMe }),
+        body: JSON.stringify({
+          email,
+          password,
+          rememberMe,
+        }),
       }, 'Giris basarisiz');
 
       if (data.requiresCompanySelection) {
@@ -209,6 +218,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await refreshProfile();
   };
 
+  const changePassword = async (currentPassword: string, newPassword: string) => {
+    await clientRequest('/api/auth/change-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ currentPassword, newPassword }),
+    }, 'Sifre degistirilemedi');
+    clearSession();
+  };
+
   const logout = async () => {
     try {
       await clientRequest('/api/auth/logout', { method: 'POST' }, 'Cikis yapilamadi');
@@ -233,6 +251,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         createAccount,
         updateAccount,
         deleteAccount,
+        changePassword,
         logout,
         isLoading,
       }}

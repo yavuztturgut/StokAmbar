@@ -43,8 +43,10 @@ export default function LoginPage() {
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setIsSubmitting(true);
+
     try {
       const result = await login(email, password, rememberMe);
+
       if (result && result.requiresCompanySelection) {
         toast.success('Giris dogrulandi. Sirket secimi yapin.');
       } else {
@@ -82,7 +84,7 @@ export default function LoginPage() {
           transition={{ duration: 0.6 }}
           className="mb-8"
         >
-          <div className="mb-4 flex w-fit cursor-pointer items-center gap-2 group">
+          <div className="group mb-4 flex w-fit cursor-pointer items-center gap-2">
             <div className="rounded-lg bg-indigo-600 p-2 shadow-lg transition-transform duration-300 group-hover:rotate-12">
               <Package size={24} className="text-white" />
             </div>
@@ -144,7 +146,7 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full rounded-xl border-2 border-slate-100 bg-slate-50 px-4 py-2.5 text-sm text-slate-800 transition-all duration-200 placeholder:text-slate-400 focus:border-indigo-600 focus:bg-white focus:outline-none"
-                  placeholder="••••••••"
+                  placeholder="........"
                   required
                 />
                 <button
@@ -209,7 +211,7 @@ export default function LoginPage() {
             className="relative z-10 w-full max-w-lg px-12 text-center"
           >
             <div className="mb-6 flex justify-center">
-              <div className="relative group">
+              <div className="group relative">
                 <div className="absolute inset-0 rounded-3xl bg-indigo-500 opacity-10 blur-3xl transition-opacity duration-500 group-hover:opacity-20" />
                 <img src={slides[currentSlide].image} alt={slides[currentSlide].title} className="relative aspect-square max-h-[350px] w-full rounded-3xl object-cover shadow-2xl" />
               </div>

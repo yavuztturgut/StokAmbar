@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { History } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { clientRequest } from "@/lib/clientApi";
-import { getActionIcon, getActionLabel } from "@/components/logs/logs-utils";
+import { getActionIcon, getActionLabel, getQuantityPresentation } from "@/components/logs/logs-utils";
 import { LogEntry } from "@/types";
 
 interface ActivityLogListProps {
@@ -78,37 +78,28 @@ export default function ActivityLogList({ refreshTrigger, limit }: ActivityLogLi
                 </td>
               </tr>
             ) : (
-              logs.map((log) => (
-                <tr key={log.id} className="transition-colors hover:bg-slate-50">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2">
-                      {getActionIcon(log.action)}
-                      <span className="font-semibold text-slate-700">{getActionLabel(log.action)}</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 font-medium text-slate-600">{log.ingredientName}</td>
-                  <td className="px-6 py-4">
-                    {log.quantity !== null && log.quantity !== undefined ? (
-                      <span
-                        className={`font-mono font-bold ${
-                          log.action === "IN" || log.action === "CREATE"
-                            ? "text-emerald-600"
-                            : "text-slate-600"
-                        }`}
-                      >
-                        {log.action === "IN" || log.action === "CREATE" ? "+" : "-"}
-                        {log.quantity}
-                      </span>
-                    ) : (
-                      "-"
-                    )}
-                  </td>
-                  <td className="px-6 py-4 text-xs italic text-slate-400">{log.details}</td>
-                  <td className="px-6 py-4 text-right text-xs text-slate-400">
-                    {log.createdAt ? new Date(log.createdAt).toLocaleString("tr-TR") : "-"}
-                  </td>
-                </tr>
-              ))
+              logs.map((log) => {
+                const quantityView = getQuantityPresentation(log.action, log.quantity);
+
+                return (
+                  <tr key={log.id} className="transition-colors hover:bg-slate-50">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2">
+                        {getActionIcon(log.action)}
+                        <span className="font-semibold text-slate-700">{getActionLabel(log.action)}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 font-medium text-slate-600">{log.ingredientName}</td>
+                    <td className="px-6 py-4">
+                      <span className={`font-mono font-bold ${quantityView.tone}`}>{quantityView.text}</span>
+                    </td>
+                    <td className="px-6 py-4 text-xs italic text-slate-400">{log.details}</td>
+                    <td className="px-6 py-4 text-right text-xs text-slate-400">
+                      {log.createdAt ? new Date(log.createdAt).toLocaleString("tr-TR") : "-"}
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>

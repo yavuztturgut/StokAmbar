@@ -1,13 +1,26 @@
+import type { NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
+import crypto from 'crypto';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'stok-takip-secret-key-change-in-production';
+const getJwtSecret = () => {
+  const jwtSecret = process.env.JWT_SECRET;
+
+  if (!jwtSecret) {
+    throw new Error('JWT_SECRET environment variable is required');
+  }
+
+  return jwtSecret;
+};
+
+const JWT_SECRET = getJwtSecret();
 export const AUTH_COOKIE_NAME = 'auth_token';
 
 export interface TokenPayload {
   userId: number;
   accountId: number;
   email: string;
+  tokenVersion: number;
 }
 
 export const hashPassword = async (password: string): Promise<string> => {
@@ -50,4 +63,15 @@ export const getAuthCookieOptions = (maxAge: number) => ({
   path: '/',
   maxAge,
 });
+
+export const clearAuthCookie = (response: NextResponse) => {
+  response.cookies.set(AUTH_COOKIE_NAME, '', getAuthCookieOptions(0));
+  return response;
+};
+
+export const createRandomToken = (size: number = 32) =>
+  crypto.randomBytes(size).toString('hex');
+
+export const hashToken = (token: string) =>
+  crypto.createHash('sha256').update(token).digest('hex');
 

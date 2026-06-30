@@ -13,7 +13,7 @@ import { getActionLabel, getVisiblePages } from "@/components/logs/logs-utils";
 
 import { LogEntry } from "@/types";
 
-type ActionFilter = "ALL" | "CREATE" | "UPDATE" | "DELETE" | "IN" | "OUT" | "WASTE";
+type ActionFilter = "ALL" | "CREATE" | "UPDATE" | "DELETE" | "IN" | "OUT" | "WASTE" | "ADJUSTMENT";
 type AmountDirection = "ALL" | "INCREASE" | "DECREASE";
 type SortOrder = "newest" | "oldest";
 
@@ -26,7 +26,7 @@ const sanitizePositiveInt = (value: string | null, fallback: number) => {
 };
 
 const sanitizeAction = (value: string | null): ActionFilter => {
-  const allowed: ActionFilter[] = ["ALL", "CREATE", "UPDATE", "DELETE", "IN", "OUT", "WASTE"];
+  const allowed: ActionFilter[] = ["ALL", "CREATE", "UPDATE", "DELETE", "IN", "OUT", "WASTE", "ADJUSTMENT"];
   return allowed.includes(value as ActionFilter) ? (value as ActionFilter) : "ALL";
 };
 

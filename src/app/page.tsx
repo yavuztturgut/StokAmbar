@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { Plus, Settings2, History, FileOutput, FileText, LayoutDashboard } from "lucide-react";
+import { Plus, Settings2, History, FileOutput, FileText, LayoutDashboard, Scale } from "lucide-react";
 import { exportToExcel, exportToPDF } from "@/lib/exportUtils";
 import AddStockModal from "@/components/AddStockModal";
 import MovementButtons from "@/components/MovementButtons";
@@ -177,6 +177,13 @@ export default function Home() {
           </div>
 
           <div className="flex items-center gap-3">
+            <button
+              onClick={() => router.push("/counts")}
+              className="flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-violet-50 text-violet-700 rounded-2xl font-bold transition-all text-sm border border-slate-100 shadow-sm"
+            >
+              <Scale size={16} />
+              Sayim
+            </button>
             <button
               onClick={handleExportExcel}
               className="flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-emerald-50 text-emerald-700 rounded-2xl font-bold transition-all text-sm border border-slate-100 shadow-sm"

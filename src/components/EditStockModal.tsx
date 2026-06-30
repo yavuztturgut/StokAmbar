@@ -16,6 +16,9 @@ interface EditStockModalProps {
 export default function EditStockModal({ ingredient, onSuccess, onClose }: EditStockModalProps) {
   const [formData, setFormData] = useState({
     name: ingredient.name,
+    category: ingredient.category || "",
+    sku: ingredient.sku || "",
+    supplier: ingredient.supplier || "",
     unit: ingredient.unit,
     minStockLevel: ingredient.minStockLevel,
   });
@@ -106,6 +109,37 @@ export default function EditStockModal({ ingredient, onSuccess, onClose }: EditS
               className="w-full rounded-xl border border-slate-200 px-4 py-2 outline-none focus:ring-2 focus:ring-indigo-500/20"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div>
+              <label className="mb-1 block text-sm font-semibold text-slate-700">Kategori</label>
+              <input
+                type="text"
+                className="w-full rounded-xl border border-slate-200 px-4 py-2"
+                value={formData.category}
+                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-semibold text-slate-700">SKU / Kod</label>
+              <input
+                type="text"
+                className="w-full rounded-xl border border-slate-200 px-4 py-2"
+                value={formData.sku}
+                onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-semibold text-slate-700">Tedarikci</label>
+            <input
+              type="text"
+              className="w-full rounded-xl border border-slate-200 px-4 py-2"
+              value={formData.supplier}
+              onChange={(e) => setFormData({ ...formData, supplier: e.target.value })}
             />
           </div>
 

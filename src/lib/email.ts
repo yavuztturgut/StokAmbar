@@ -61,3 +61,46 @@ export async function sendLowStockEmail(
     console.error('E-posta gönderim hatası:', error);
   }
 }
+
+export async function sendPasswordResetEmail(to: string, token: string) {
+  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+    console.warn('Sifre sifirlama e-postasi gonderilemedi: SMTP yapilandirmasi eksik.');
+    return;
+  }
+
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const resetUrl = `${appUrl}/reset-password?token=${encodeURIComponent(token)}`;
+
+  const mailOptions = {
+    from: process.env.SMTP_FROM || `"StokAmbar" <${process.env.SMTP_USER}>`,
+    to,
+    subject: 'Sifre sifirlama baglantiniz',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 10px; overflow: hidden;">
+        <div style="background-color: #4f46e5; color: white; padding: 20px; text-align: center;">
+          <h2 style="margin: 0;">Sifre Sifirlama</h2>
+        </div>
+        <div style="padding: 24px; background-color: #ffffff;">
+          <p style="font-size: 15px; color: #334155;">Merhaba,</p>
+          <p style="font-size: 15px; color: #334155;">
+            Sifrenizi yenilemek icin asagidaki butona tiklayin. Bu baglanti 1 saat boyunca gecerlidir.
+          </p>
+          <a href="${resetUrl}" style="display: inline-block; margin-top: 16px; background-color: #4f46e5; color: white; text-decoration: none; padding: 12px 20px; border-radius: 8px; font-weight: 700;">
+            Sifremi Yenile
+          </a>
+          <p style="margin-top: 20px; font-size: 13px; color: #64748b;">
+            Buton calismazsa bu baglantiyi tarayicinizda acin:
+          </p>
+          <p style="font-size: 13px; color: #4f46e5; word-break: break-all;">${resetUrl}</p>
+        </div>
+      </div>
+    `,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log(`Sifre sifirlama e-postasi gonderildi: ${to}`);
+  } catch (error) {
+    console.error('Sifre sifirlama e-posta hatasi:', error);
+  }
+}

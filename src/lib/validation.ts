@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-const transactionTypes = ["IN", "OUT", "WASTE"] as const;
+const transactionTypes = ["IN", "OUT", "WASTE", "ADJUSTMENT"] as const;
 const ingredientUnits = ["kg", "lt", "adet", "paket"] as const;
 
 const nonEmptyTrimmedString = z.string().trim().min(1);
@@ -33,8 +33,25 @@ export const registerSchema = z.object({
   phone: optionalTrimmedString,
 });
 
+export const forgotPasswordSchema = z.object({
+  email: z.string().trim().email(),
+});
+
+export const resetPasswordSchema = z.object({
+  token: z.string().trim().min(32),
+  password: z.string().min(6).max(128),
+});
+
+export const changePasswordSchema = z.object({
+  currentPassword: z.string().min(6).max(128),
+  newPassword: z.string().min(6).max(128),
+});
+
 export const ingredientCreateSchema = z.object({
   name: nonEmptyTrimmedString.max(120),
+  category: optionalTrimmedString,
+  sku: optionalTrimmedString,
+  supplier: optionalTrimmedString,
   unit: z.enum(ingredientUnits),
   currentStock: z.coerce.number().min(0).max(1_000_000).default(0),
   minStockLevel: z.coerce.number().min(0).max(1_000_000).default(0),
@@ -42,6 +59,9 @@ export const ingredientCreateSchema = z.object({
 
 export const ingredientUpdateSchema = z.object({
   name: nonEmptyTrimmedString.max(120),
+  category: optionalTrimmedString,
+  sku: optionalTrimmedString,
+  supplier: optionalTrimmedString,
   unit: z.enum(ingredientUnits),
   minStockLevel: z.coerce.number().min(0).max(1_000_000),
 });
@@ -82,7 +102,7 @@ export const logsQuerySchema = z.object({
   page: z.coerce.number().int().positive().default(1),
   search: z.string().trim().max(120).optional().default(""),
   action: z
-    .enum(["ALL", "CREATE", "UPDATE", "DELETE", "IN", "OUT", "WASTE"])
+    .enum(["ALL", "CREATE", "UPDATE", "DELETE", "IN", "OUT", "WASTE", "ADJUSTMENT"])
     .optional()
     .default("ALL"),
   startDate: z.string().date().optional(),
@@ -96,6 +116,14 @@ export const logsQuerySchema = z.object({
 
 export const analyticsQuerySchema = z.object({
   days: z.coerce.number().int().min(1).max(90).default(7),
+});
+
+export const stockCountCreateSchema = z.object({
+  items: z.array(z.object({
+    ingredientId: z.coerce.number().int().positive(),
+    countedStock: z.coerce.number().min(0).max(1_000_000),
+    note: optionalTrimmedString,
+  })).min(1),
 });
 
 export const formatZodError = (error: z.ZodError) =>

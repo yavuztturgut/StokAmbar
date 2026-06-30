@@ -60,11 +60,17 @@ export async function GET(req: NextRequest) {
     }
 
     if (amountDirection === "INCREASE") {
-      where.action = { in: ["CREATE", "IN"] };
+      where.OR = [
+        { action: { in: ["CREATE", "IN"] } },
+        { action: "ADJUSTMENT", quantity: { gt: 0 } },
+      ];
     }
 
     if (amountDirection === "DECREASE") {
-      where.action = { in: ["OUT", "WASTE"] };
+      where.OR = [
+        { action: { in: ["OUT", "WASTE"] } },
+        { action: "ADJUSTMENT", quantity: { lt: 0 } },
+      ];
     }
 
     if (startDate || endDate) {

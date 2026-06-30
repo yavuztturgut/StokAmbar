@@ -3,12 +3,26 @@ import { prisma } from "@/lib/prisma";
 import { hashPassword } from "@/lib/auth";
 import { createAuthSuccessResponse, loadAuthUser } from "@/lib/accountAuth";
 import { formatZodError, registerSchema } from "@/lib/validation";
+import { enforcePreAuthRateLimit, withRateLimitHeaders } from "@/lib/rateLimit";
 
 export async function POST(request: NextRequest) {
   try {
-    const parsedBody = registerSchema.safeParse(await request.json());
+    const rawBody = await request.json() as Record<string, unknown>;
+    const rateLimit = await enforcePreAuthRateLimit({
+      scope: "auth:register",
+      request,
+    });
+
+    if (rateLimit instanceof NextResponse) {
+      return rateLimit;
+    }
+
+    const respond = (body: unknown, status: number) =>
+      withRateLimitHeaders(NextResponse.json(body, { status }), rateLimit);
+
+    const parsedBody = registerSchema.safeParse(rawBody);
     if (!parsedBody.success) {
-      return NextResponse.json({ error: formatZodError(parsedBody.error) }, { status: 400 });
+      return respond({ error: formatZodError(parsedBody.error) }, 400);
     }
 
     const { email, username, password, accountName, accountEmail, phone } = parsedBody.data;
@@ -19,14 +33,14 @@ export async function POST(request: NextRequest) {
       },
     });
     if (existingUser) {
-      return NextResponse.json({ error: "Bu email veya username zaten kullaniliyor" }, { status: 400 });
+      return respond({ error: "Bu email veya username zaten kullaniliyor" }, 400);
     }
 
     const existingAccount = await prisma.account.findUnique({
       where: { email: accountEmail },
     });
     if (existingAccount) {
-      return NextResponse.json({ error: "Bu hesap email adresi zaten kayitli" }, { status: 400 });
+      return respond({ error: "Bu hesap email adresi zaten kayitli" }, 400);
     }
 
     const hashedPassword = await hashPassword(password);
@@ -55,12 +69,12 @@ export async function POST(request: NextRequest) {
 
     const user = await loadAuthUser({ id: createdUser.id });
     if (!user) {
-      return NextResponse.json({ error: "Kayit sonrasi kullanici bulunamadi" }, { status: 500 });
+      return respond({ error: "Kayit sonrasi kullanici bulunamadi" }, 500);
     }
 
-    return createAuthSuccessResponse(user, account.id, "7d");
+    return withRateLimitHeaders(createAuthSuccessResponse(user, account.id, "7d"), rateLimit);
   } catch (error) {
-    console.error("Kayit hatasi:", error);
+    console.error("Register error:", error);
     return NextResponse.json({ error: "Kayit sirasinda bir hata olustu" }, { status: 500 });
   }
 }

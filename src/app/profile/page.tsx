@@ -19,13 +19,20 @@ export default function ProfilePage() {
     createAccount,
     updateAccount,
     deleteAccount,
+    changePassword,
   } = useAuth();
 
   const [isEditing, setIsEditing] = useState<number | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
   const [formData, setFormData] = useState({ name: '', email: '', phone: '' });
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
   const [isSaving, setIsSaving] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -89,6 +96,30 @@ export default function ProfilePage() {
     }
   };
 
+  const handlePasswordChange = async () => {
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      toast.error('Yeni sifreler eslesmiyor');
+      return;
+    }
+
+    setIsChangingPassword(true);
+    try {
+      await changePassword(passwordForm.currentPassword, passwordForm.newPassword);
+      setPasswordForm({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: '',
+      });
+      toast.success('Sifre degistirildi. Tekrar giris yapin.');
+      router.push('/login');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Sifre degistirilemedi';
+      toast.error(message);
+    } finally {
+      setIsChangingPassword(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50">
@@ -118,38 +149,93 @@ export default function ProfilePage() {
         </div>
 
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-          <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
-            <div className="border-b border-slate-100 bg-slate-50/50 p-6">
-              <h2 className="flex items-center gap-2 text-lg font-bold text-slate-800">
-                <User size={20} className="text-blue-600" />
-                Kullanici Bilgileri
-              </h2>
-            </div>
+          <div className="space-y-6">
+            <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
+              <div className="border-b border-slate-100 bg-slate-50/50 p-6">
+                <h2 className="flex items-center gap-2 text-lg font-bold text-slate-800">
+                  <User size={20} className="text-blue-600" />
+                  Kullanici Bilgileri
+                </h2>
+              </div>
 
-            <div className="space-y-4 p-6">
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div>
-                  <label className="mb-2 block text-xs font-bold uppercase text-slate-600">Kullanici Adi</label>
-                  <div className="rounded-lg border border-slate-100 bg-slate-50 px-4 py-3 font-semibold text-slate-700">
-                    @{user.username}
+              <div className="space-y-4 p-6">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div>
+                    <label className="mb-2 block text-xs font-bold uppercase text-slate-600">Kullanici Adi</label>
+                    <div className="rounded-lg border border-slate-100 bg-slate-50 px-4 py-3 font-semibold text-slate-700">
+                      @{user.username}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-xs font-bold uppercase text-slate-600">Email</label>
+                    <div className="flex items-center gap-2 rounded-lg border border-slate-100 bg-slate-50 px-4 py-3 font-semibold text-slate-700">
+                      <Mail size={16} className="text-slate-400" />
+                      {user.email}
+                    </div>
                   </div>
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-xs font-bold uppercase text-slate-600">Email</label>
+                  <label className="mb-2 block text-xs font-bold uppercase text-slate-600">Uyelik Tarihi</label>
                   <div className="flex items-center gap-2 rounded-lg border border-slate-100 bg-slate-50 px-4 py-3 font-semibold text-slate-700">
-                    <Mail size={16} className="text-slate-400" />
-                    {user.email}
+                    <Calendar size={16} className="text-slate-400" />
+                    {user.createdAt ? new Date(user.createdAt).toLocaleDateString('tr-TR') : '-'}
                   </div>
                 </div>
               </div>
+            </div>
 
-              <div>
-                <label className="mb-2 block text-xs font-bold uppercase text-slate-600">Uyelik Tarihi</label>
-                <div className="flex items-center gap-2 rounded-lg border border-slate-100 bg-slate-50 px-4 py-3 font-semibold text-slate-700">
-                  <Calendar size={16} className="text-slate-400" />
-                  {user.createdAt ? new Date(user.createdAt).toLocaleDateString('tr-TR') : '-'}
+            <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
+              <div className="border-b border-slate-100 bg-slate-50/50 p-6">
+                <h2 className="text-lg font-bold text-slate-800">Sifre Degistir</h2>
+                <p className="mt-1 text-sm text-slate-500">Bu islem tum aktif oturumlari kapatir.</p>
+              </div>
+
+              <div className="space-y-4 p-6">
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-slate-700">Mevcut Sifre</label>
+                  <input
+                    type="password"
+                    value={passwordForm.currentPassword}
+                    onChange={(event) =>
+                      setPasswordForm((current) => ({ ...current, currentPassword: event.target.value }))
+                    }
+                    className="w-full rounded-lg border border-slate-200 px-4 py-3 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
                 </div>
+
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-slate-700">Yeni Sifre</label>
+                  <input
+                    type="password"
+                    value={passwordForm.newPassword}
+                    onChange={(event) =>
+                      setPasswordForm((current) => ({ ...current, newPassword: event.target.value }))
+                    }
+                    className="w-full rounded-lg border border-slate-200 px-4 py-3 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-slate-700">Yeni Sifre Tekrar</label>
+                  <input
+                    type="password"
+                    value={passwordForm.confirmPassword}
+                    onChange={(event) =>
+                      setPasswordForm((current) => ({ ...current, confirmPassword: event.target.value }))
+                    }
+                    className="w-full rounded-lg border border-slate-200 px-4 py-3 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+
+                <button
+                  onClick={() => void handlePasswordChange()}
+                  disabled={isChangingPassword}
+                  className="w-full rounded-lg bg-slate-900 px-4 py-3 font-semibold text-white transition-colors hover:bg-slate-800 disabled:bg-slate-400"
+                >
+                  {isChangingPassword ? 'Sifre Guncelleniyor...' : 'Sifreyi Degistir'}
+                </button>
               </div>
             </div>
           </div>

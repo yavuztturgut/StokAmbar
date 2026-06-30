@@ -2,6 +2,9 @@ export interface Ingredient {
   id: number;
   accountId: number;
   name: string;
+  category?: string | null;
+  sku?: string | null;
+  supplier?: string | null;
   unit: string;
   currentStock: number;
   minStockLevel: number;
@@ -25,6 +28,22 @@ export interface User {
   createdAt: string;
 }
 
+export interface StockCountAdjustment {
+  id: number;
+  accountId: number;
+  ingredientId: number;
+  expectedStock: number;
+  countedStock: number;
+  difference: number;
+  note?: string | null;
+  createdAt: string;
+  ingredient?: {
+    id: number;
+    name: string;
+    unit: string;
+  };
+}
+
 export interface Account {
   id: number;
   ownerId?: number;
@@ -40,7 +59,6 @@ export interface AuthResponse {
   user: User;
   activeAccount: Account;
   accounts: Account[];
-  token?: string;
   requiresCompanySelection?: boolean;
   selectionToken?: string;
 }

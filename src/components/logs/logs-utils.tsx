@@ -7,6 +7,7 @@ import {
   Donut,
   ClipboardPlus,
   ArrowRightLeft,
+  Scale,
 } from "lucide-react";
 
 export const getVisiblePages = (currentPage: number, totalPages: number) => {
@@ -39,6 +40,8 @@ export const getActionIcon = (action: string) => {
       return <ArrowRightLeft className="text-amber-500" size={16} />;
     case "WASTE":
       return <Donut className="text-rose-500 font-bold" size={16} />;
+    case "ADJUSTMENT":
+      return <Scale className="text-violet-500" size={16} />;
     default:
       return <History size={16} />;
   }
@@ -58,7 +61,33 @@ export const getActionLabel = (action: string) => {
       return "Stok Cikisi";
     case "WASTE":
       return "Zayiat Kaydi";
+    case "ADJUSTMENT":
+      return "Sayim Duzeltmesi";
     default:
       return action;
   }
+};
+
+export const getQuantityPresentation = (action: string, quantity?: number | null) => {
+  if (quantity === null || quantity === undefined) {
+    return { text: "-", tone: "text-slate-600" };
+  }
+
+  if (action === "ADJUSTMENT") {
+    if (quantity > 0) {
+      return { text: `+${quantity}`, tone: "text-emerald-600" };
+    }
+
+    if (quantity < 0) {
+      return { text: `${quantity}`, tone: "text-rose-600" };
+    }
+
+    return { text: "0", tone: "text-slate-600" };
+  }
+
+  if (action === "IN" || action === "CREATE") {
+    return { text: `+${quantity}`, tone: "text-emerald-600" };
+  }
+
+  return { text: `-${quantity}`, tone: "text-slate-600" };
 };
