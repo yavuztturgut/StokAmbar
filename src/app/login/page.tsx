@@ -217,11 +217,6 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-indigo-600 px-4 py-1.5 text-[10px] font-black uppercase tracking-widest text-white shadow-md shadow-indigo-100">
-              {slides[currentSlide].icon}
-              <span>Ozellik {currentSlide + 1}</span>
-            </div>
-
             <h2 className="mb-3 text-3xl font-black leading-tight tracking-tight text-slate-900">{slides[currentSlide].title}</h2>
             <p className="mb-8 text-base font-medium leading-relaxed text-slate-500">{slides[currentSlide].description}</p>
 

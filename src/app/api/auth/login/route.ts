@@ -8,39 +8,51 @@ import {
   serializeUser,
   signSelectionToken,
 } from "@/lib/accountAuth";
-import { enforcePreAuthRateLimit, withRateLimitHeaders } from "@/lib/rateLimit";
+import {
+  clearFailedLoginState,
+  enforceLoginRateLimit,
+  recordFailedLoginAttempt,
+  withRateLimitHeaders,
+} from "@/lib/rateLimit";
 
 export async function POST(request: NextRequest) {
   try {
     const rawBody = await request.json() as Record<string, unknown>;
-    const rateLimit = await enforcePreAuthRateLimit({
-      scope: "auth:login",
+    const parsedBody = loginSchema.safeParse(rawBody);
+    if (!parsedBody.success) {
+      return NextResponse.json({ error: formatZodError(parsedBody.error) }, { status: 400 });
+    }
+
+    const { email, password, rememberMe } = parsedBody.data;
+    const rateLimit = await enforceLoginRateLimit({
       request,
+      email,
     });
 
     if (rateLimit instanceof NextResponse) {
       return rateLimit;
     }
 
-    const respond = (body: unknown, status: number) =>
-      withRateLimitHeaders(NextResponse.json(body, { status }), rateLimit);
+    const respond = async (body: unknown, status: number, failedAttempt: boolean = false) => {
+      if (failedAttempt) {
+        await recordFailedLoginAttempt({ request, email });
+      }
 
-    const parsedBody = loginSchema.safeParse(rawBody);
-    if (!parsedBody.success) {
-      return respond({ error: formatZodError(parsedBody.error) }, 400);
-    }
+      return withRateLimitHeaders(NextResponse.json(body, { status }), rateLimit);
+    };
 
-    const { email, password, rememberMe } = parsedBody.data;
     const user = await loadAuthUser({ email });
 
     if (!user) {
-      return respond({ error: "Gecersiz email veya sifre" }, 401);
+      return respond({ error: "Gecersiz email veya sifre" }, 401, true);
     }
 
     const isPasswordValid = await verifyPassword(password, user.password);
     if (!isPasswordValid) {
-      return respond({ error: "Gecersiz email veya sifre" }, 401);
+      return respond({ error: "Gecersiz email veya sifre" }, 401, true);
     }
+
+    await clearFailedLoginState({ request, email });
 
     const accounts = listAccounts(user);
     if (!accounts.length) {

@@ -7,6 +7,11 @@ export const ANON_DEVICE_COOKIE_NAME = "anon_device_id";
 
 type RateLimitScope =
   | "auth:login"
+  | "auth:login-ip"
+  | "auth:login-ip-email"
+  | "auth:login-fail"
+  | "auth:login-blacklist"
+  | "auth:token"
   | "auth:register"
   | "auth:forgot-password"
   | "auth:reset-password"
@@ -33,6 +38,16 @@ interface PreAuthInput {
 interface PostAuthInput {
   scope: RateLimitScope;
   request: NextRequest;
+}
+
+interface LoginRateLimitInput {
+  request: NextRequest;
+  email: string;
+}
+
+interface LoginStateInput {
+  request: NextRequest;
+  email: string;
 }
 
 interface AllowResult {
@@ -62,6 +77,11 @@ const memoryBuckets =
 
 const RATE_LIMIT_POLICIES: Record<RateLimitScope, RateLimitPolicy> = {
   "auth:login": { scope: "auth:login", maxRequests: 12, windowMs: 15 * 60 * 1000 },
+  "auth:login-ip": { scope: "auth:login-ip", maxRequests: 30, windowMs: 15 * 60 * 1000 },
+  "auth:login-ip-email": { scope: "auth:login-ip-email", maxRequests: 5, windowMs: 10 * 60 * 1000 },
+  "auth:login-fail": { scope: "auth:login-fail", maxRequests: 6, windowMs: 30 * 60 * 1000 },
+  "auth:login-blacklist": { scope: "auth:login-blacklist", maxRequests: 1, windowMs: 30 * 60 * 1000 },
+  "auth:token": { scope: "auth:token", maxRequests: 60, windowMs: 15 * 60 * 1000 },
   "auth:register": { scope: "auth:register", maxRequests: 8, windowMs: 60 * 60 * 1000 },
   "auth:forgot-password": { scope: "auth:forgot-password", maxRequests: 8, windowMs: 60 * 60 * 1000 },
   "auth:reset-password": { scope: "auth:reset-password", maxRequests: 10, windowMs: 60 * 60 * 1000 },
@@ -77,6 +97,12 @@ const RATE_LIMIT_POLICIES: Record<RateLimitScope, RateLimitPolicy> = {
 
 const RATE_LIMIT_DIRECT_IP_FALLBACK = "local-client";
 const TRUST_PROXY = process.env.TRUST_PROXY === "true";
+const LOGIN_DELAY_STEPS = [
+  { threshold: 4, delayMs: 5_000 },
+  { threshold: 2, delayMs: 1_000 },
+];
+const LOGIN_BLACKLIST_THRESHOLD = 6;
+const LOGIN_BLACKLIST_DELAY_MS = 15_000;
 
 const getDirectClientIp = (request: NextRequest) => {
   const directIp = (request as NextRequest & { ip?: string | null }).ip;
@@ -102,6 +128,8 @@ export const resolveRateLimitIp = (request: NextRequest) => {
 
   return getDirectClientIp(request);
 };
+
+export const normalizeRateLimitEmail = (email: string) => email.trim().toLowerCase();
 
 const getOrCreateAnonDeviceId = (request: NextRequest) =>
   request.cookies.get(ANON_DEVICE_COOKIE_NAME)?.value || createRandomToken(16);
@@ -136,12 +164,17 @@ const applyAuxiliaryState = (response: NextResponse, anonDeviceId: string | null
 
 const getStorageKey = (scope: RateLimitScope, keyHash: string) => `${scope}:${keyHash}`;
 
-const pruneMemoryBucket = (scope: RateLimitScope, keyHash: string) => {
-  const storageKey = getStorageKey(scope, keyHash);
-  const current = memoryBuckets.get(storageKey);
-  if (current && current.windowEnd.getTime() <= Date.now()) {
-    memoryBuckets.delete(storageKey);
+const normalizeBucket = (bucket: BucketState | null) => {
+  if (!bucket) {
+    return null;
   }
+
+  return {
+    ...bucket,
+    windowStart: new Date(bucket.windowStart),
+    windowEnd: new Date(bucket.windowEnd),
+    lastSeenAt: new Date(bucket.lastSeenAt),
+  };
 };
 
 const getRateLimitClient = () => {
@@ -154,34 +187,23 @@ const getRateLimitClient = () => {
   return client;
 };
 
-const ensureBucket = async (policy: RateLimitPolicy, keyHash: string): Promise<BucketState> => {
+const getBucket = async (policy: RateLimitPolicy, keyHash: string): Promise<BucketState | null> => {
   const client = getRateLimitClient();
-  const now = new Date();
-  const windowEnd = new Date(now.getTime() + policy.windowMs);
+  const now = Date.now();
 
   if (!client) {
-    pruneMemoryBucket(policy.scope, keyHash);
     const storageKey = getStorageKey(policy.scope, keyHash);
-    const current = memoryBuckets.get(storageKey);
-
+    const current = normalizeBucket(memoryBuckets.get(storageKey) ?? null);
     if (!current) {
-      const created = {
-        count: 1,
-        windowStart: now,
-        windowEnd,
-        lastSeenAt: now,
-      };
-      memoryBuckets.set(storageKey, created);
-      return created;
+      return null;
     }
 
-    const updated = {
-      ...current,
-      count: current.count + 1,
-      lastSeenAt: now,
-    };
-    memoryBuckets.set(storageKey, updated);
-    return updated;
+    if (current.windowEnd.getTime() <= now) {
+      memoryBuckets.delete(storageKey);
+      return null;
+    }
+
+    return current;
   }
 
   const current = await client.rateLimitBucket.findUnique({
@@ -194,28 +216,60 @@ const ensureBucket = async (policy: RateLimitPolicy, keyHash: string): Promise<B
   });
 
   if (!current) {
-    return client.rateLimitBucket.create({
-      data: {
-        scope: policy.scope,
-        keyHash,
-        count: 1,
-        windowStart: now,
-        windowEnd,
-        lastSeenAt: now,
-      },
-    });
+    return null;
   }
 
-  if (current.windowEnd.getTime() <= now.getTime()) {
-    return client.rateLimitBucket.update({
+  if (current.windowEnd.getTime() <= now) {
+    await client.rateLimitBucket.delete({
       where: {
         scope_keyHash: {
           scope: policy.scope,
           keyHash,
         },
       },
+    });
+    return null;
+  }
+
+  return current;
+};
+
+const setBucket = async (
+  policy: RateLimitPolicy,
+  keyHash: string,
+  count: number,
+  windowMs: number = policy.windowMs
+): Promise<BucketState> => {
+  const client = getRateLimitClient();
+  const now = new Date();
+  const windowEnd = new Date(now.getTime() + windowMs);
+
+  if (!client) {
+    const bucket = {
+      count,
+      windowStart: now,
+      windowEnd,
+      lastSeenAt: now,
+    };
+    memoryBuckets.set(getStorageKey(policy.scope, keyHash), bucket);
+    return bucket;
+  }
+
+  const existing = await client.rateLimitBucket.findUnique({
+    where: {
+      scope_keyHash: {
+        scope: policy.scope,
+        keyHash,
+      },
+    },
+  });
+
+  if (!existing) {
+    return client.rateLimitBucket.create({
       data: {
-        count: 1,
+        scope: policy.scope,
+        keyHash,
+        count,
         windowStart: now,
         windowEnd,
         lastSeenAt: now,
@@ -231,10 +285,62 @@ const ensureBucket = async (policy: RateLimitPolicy, keyHash: string): Promise<B
       },
     },
     data: {
-      count: { increment: 1 },
+      count,
+      windowStart: now,
+      windowEnd,
       lastSeenAt: now,
     },
   });
+};
+
+const clearBucket = async (policy: RateLimitPolicy, keyHash: string) => {
+  const client = getRateLimitClient();
+
+  if (!client) {
+    memoryBuckets.delete(getStorageKey(policy.scope, keyHash));
+    return;
+  }
+
+  await client.rateLimitBucket.deleteMany({
+    where: {
+      scope: policy.scope,
+      keyHash,
+    },
+  });
+};
+
+const ensureBucket = async (policy: RateLimitPolicy, keyHash: string): Promise<BucketState> => {
+  const current = await getBucket(policy, keyHash);
+  const now = new Date();
+
+  if (!current) {
+    return setBucket(policy, keyHash, 1);
+  }
+
+  return setBucket(
+    policy,
+    keyHash,
+    current.count + 1,
+    current.windowEnd.getTime() - now.getTime()
+  );
+};
+
+const sleep = async (delayMs: number) => {
+  if (delayMs <= 0) {
+    return;
+  }
+
+  await new Promise((resolve) => setTimeout(resolve, delayMs));
+};
+
+const getLoginDelayMs = (failureCount: number) => {
+  for (const step of LOGIN_DELAY_STEPS) {
+    if (failureCount >= step.threshold) {
+      return step.delayMs;
+    }
+  }
+
+  return 0;
 };
 
 const buildTooManyRequestsResponse = (message: string, anonDeviceId: string | null, headers: Record<string, string>) =>
@@ -250,6 +356,87 @@ const buildTooManyRequestsResponse = (message: string, anonDeviceId: string | nu
     anonDeviceId,
     headers
   );
+
+const getLoginRateLimitKeys = (request: NextRequest, email: string) => {
+  const normalizedEmail = normalizeRateLimitEmail(email);
+  const ip = resolveRateLimitIp(request);
+  const ipKeyHash = hashToken(`auth:login-ip:${ip}`);
+  const ipEmailKeyHash = hashToken(`auth:login-ip-email:${ip}:${normalizedEmail}`);
+
+  return {
+    normalizedEmail,
+    ipKeyHash,
+    ipEmailKeyHash,
+  };
+};
+
+export const enforceLoginRateLimit = async ({
+  request,
+  email,
+}: LoginRateLimitInput): Promise<AllowResult | NextResponse> => {
+  const ipPolicy = RATE_LIMIT_POLICIES["auth:login-ip"];
+  const ipEmailPolicy = RATE_LIMIT_POLICIES["auth:login-ip-email"];
+  const failPolicy = RATE_LIMIT_POLICIES["auth:login-fail"];
+  const blacklistPolicy = RATE_LIMIT_POLICIES["auth:login-blacklist"];
+  const { ipKeyHash, ipEmailKeyHash } = getLoginRateLimitKeys(request, email);
+
+  const blacklistBucket = await getBucket(blacklistPolicy, ipEmailKeyHash);
+  if (blacklistBucket) {
+    await sleep(LOGIN_BLACKLIST_DELAY_MS);
+  }
+
+  const failBucket = await getBucket(failPolicy, ipEmailKeyHash);
+  if (!blacklistBucket && failBucket) {
+    await sleep(getLoginDelayMs(failBucket.count));
+  }
+
+  const ipBucket = await ensureBucket(ipPolicy, ipKeyHash);
+  const ipEmailBucket = await ensureBucket(ipEmailPolicy, ipEmailKeyHash);
+  const ipHeaders = getHeaderValues(ipBucket, ipPolicy);
+  const ipEmailHeaders = getHeaderValues(ipEmailBucket, ipEmailPolicy);
+
+  if (ipBucket.count > ipPolicy.maxRequests) {
+    return buildTooManyRequestsResponse("Cok fazla deneme yapildi. Lutfen biraz bekleyin.", null, ipHeaders);
+  }
+
+  if (ipEmailBucket.count > ipEmailPolicy.maxRequests) {
+    return buildTooManyRequestsResponse("Cok fazla deneme yapildi. Lutfen biraz bekleyin.", null, ipEmailHeaders);
+  }
+
+  return {
+    allowed: true,
+    anonDeviceId: null,
+    headers: ipEmailHeaders,
+  };
+};
+
+export const recordFailedLoginAttempt = async ({
+  request,
+  email,
+}: LoginStateInput) => {
+  const failPolicy = RATE_LIMIT_POLICIES["auth:login-fail"];
+  const blacklistPolicy = RATE_LIMIT_POLICIES["auth:login-blacklist"];
+  const { ipEmailKeyHash } = getLoginRateLimitKeys(request, email);
+  const failBucket = await ensureBucket(failPolicy, ipEmailKeyHash);
+
+  if (failBucket.count >= LOGIN_BLACKLIST_THRESHOLD) {
+    await setBucket(blacklistPolicy, ipEmailKeyHash, 1);
+  }
+};
+
+export const clearFailedLoginState = async ({
+  request,
+  email,
+}: LoginStateInput) => {
+  const failPolicy = RATE_LIMIT_POLICIES["auth:login-fail"];
+  const blacklistPolicy = RATE_LIMIT_POLICIES["auth:login-blacklist"];
+  const { ipEmailKeyHash } = getLoginRateLimitKeys(request, email);
+
+  await Promise.all([
+    clearBucket(failPolicy, ipEmailKeyHash),
+    clearBucket(blacklistPolicy, ipEmailKeyHash),
+  ]);
+};
 
 export const enforcePreAuthRateLimit = async ({
   scope,
@@ -283,18 +470,30 @@ export const enforcePostAuthRateLimit = async ({
     return NextResponse.json({ error: "Token not found" }, { status: 401 });
   }
 
-  const keyHash = hashToken(`${scope}:${resolveRateLimitIp(request)}:${hashToken(token)}`);
-  const bucket = await ensureBucket(policy, keyHash);
-  const headers = getHeaderValues(bucket, policy);
+  const ip = resolveRateLimitIp(request);
+  const scopeKeyHash = hashToken(`${scope}:${ip}:${hashToken(token)}`);
+  const scopeBucket = await ensureBucket(policy, scopeKeyHash);
+  const scopeHeaders = getHeaderValues(scopeBucket, policy);
 
-  if (bucket.count > policy.maxRequests) {
-    return buildTooManyRequestsResponse("Bu islem icin cok fazla istek yapildi.", null, headers);
+  if (scopeBucket.count > policy.maxRequests) {
+    return buildTooManyRequestsResponse("Bu islem icin cok fazla istek yapildi.", null, scopeHeaders);
+  }
+
+  if (scope.startsWith("auth:") && scope !== "auth:select-company") {
+    const tokenPolicy = RATE_LIMIT_POLICIES["auth:token"];
+    const tokenKeyHash = hashToken(`auth:token:${ip}:${hashToken(token)}`);
+    const tokenBucket = await ensureBucket(tokenPolicy, tokenKeyHash);
+    const tokenHeaders = getHeaderValues(tokenBucket, tokenPolicy);
+
+    if (tokenBucket.count > tokenPolicy.maxRequests) {
+      return buildTooManyRequestsResponse("Bu islem icin cok fazla istek yapildi.", null, tokenHeaders);
+    }
   }
 
   return {
     allowed: true,
     anonDeviceId: null,
-    headers,
+    headers: scopeHeaders,
   };
 };
 

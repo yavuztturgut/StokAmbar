@@ -77,7 +77,7 @@ export default function LogsFilters({
               <option value="IN">Giris</option>
               <option value="OUT">Cikis</option>
               <option value="WASTE">Zayiat</option>
-              <option value="ADJUSTMENT">Sayim duzeltmesi</option>
+              <option value="ADJUSTMENT">Sayım duzeltmesi</option>
             </select>
           </div>
 

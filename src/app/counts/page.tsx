@@ -24,7 +24,7 @@ export default function CountsPage() {
     try {
       const [ingredientData, adjustmentData] = await Promise.all([
         clientRequest<Ingredient[]>('/api/ingredients', undefined, 'Malzemeler alinamadi'),
-        clientRequest<StockCountAdjustment[]>('/api/stock-counts', undefined, 'Sayim kayitlari alinamadi'),
+        clientRequest<StockCountAdjustment[]>('/api/stock-counts', undefined, 'Sayım kayitlari alinamadi'),
       ]);
 
       setIngredients(ingredientData);
@@ -86,7 +86,7 @@ export default function CountsPage() {
 
   const handleSubmit = async () => {
     if (!changedItems.length) {
-      toast.error('Kaydedilecek sayim farki yok');
+      toast.error('Kaydedilecek sayım farki yok');
       return;
     }
 
@@ -99,7 +99,7 @@ export default function CountsPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ items: changedItems }),
         },
-        'Sayim kaydi olusturulamadi'
+        'Sayım kaydi olusturulamadi'
       );
 
       toast.success(`${result.adjustedCount} malzeme duzeltildi`);
@@ -107,7 +107,7 @@ export default function CountsPage() {
       setNotes({});
       await loadData();
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Sayim kaydi olusturulamadi';
+      const message = error instanceof Error ? error.message : 'Sayım kaydi olusturulamadi';
       toast.error(message);
     } finally {
       setIsSubmitting(false);
@@ -119,7 +119,7 @@ export default function CountsPage() {
       <div className="flex min-h-screen items-center justify-center bg-slate-50">
         <div className="text-center">
           <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-b-2 border-indigo-600" />
-          <p className="text-slate-500">Sayim hazirlaniyor...</p>
+          <p className="text-slate-500">Sayım hazirlaniyor...</p>
         </div>
       </div>
     );
@@ -137,9 +137,9 @@ export default function CountsPage() {
             <div>
               <div className="mb-2 flex items-center gap-2 text-violet-600">
                 <Scale size={18} />
-                <span className="text-sm font-bold uppercase tracking-wider">Stok Sayimi</span>
+                <span className="text-sm font-bold uppercase tracking-wider">Stok Sayımı</span>
               </div>
-              <h1 className="text-3xl font-black tracking-tight text-slate-800">Fiziksel sayim duzeltmesi</h1>
+              <h1 className="text-3xl font-black tracking-tight text-slate-800">Fiziksel sayım duzeltmesi</h1>
               <p className="mt-1 text-slate-500">
                 Sayilan stogu gir. Sistem mevcut stokla farki hesaplayip duzeltme hareketi olusturur.
               </p>
@@ -240,7 +240,7 @@ export default function CountsPage() {
                               [ingredient.id]: event.target.value,
                             }))
                           }
-                          placeholder="Sayim notu"
+                          placeholder="Sayım notu"
                           className="w-full min-w-40 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 outline-none transition-all focus:border-violet-500 focus:bg-white"
                         />
                       </td>
@@ -255,12 +255,12 @@ export default function CountsPage() {
         <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
           <div className="mb-4 flex items-center gap-2">
             <Scale size={18} className="text-violet-600" />
-            <h2 className="text-lg font-bold text-slate-800">Son sayim duzeltmeleri</h2>
+            <h2 className="text-lg font-bold text-slate-800">Son sayım duzeltmeleri</h2>
           </div>
 
           <div className="space-y-3">
             {adjustments.length === 0 ? (
-              <p className="text-sm text-slate-400">Henuz sayim duzeltmesi yok.</p>
+              <p className="text-sm text-slate-400">Henuz sayım duzeltmesi yok.</p>
             ) : (
               adjustments.map((adjustment) => (
                 <div key={adjustment.id} className="flex flex-col gap-2 rounded-2xl border border-slate-100 bg-slate-50/70 p-4 md:flex-row md:items-center md:justify-between">

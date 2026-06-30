@@ -182,7 +182,7 @@ export default function Home() {
               className="flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-violet-50 text-violet-700 rounded-2xl font-bold transition-all text-sm border border-slate-100 shadow-sm"
             >
               <Scale size={16} />
-              Sayim
+              Sayım
             </button>
             <button
               onClick={handleExportExcel}

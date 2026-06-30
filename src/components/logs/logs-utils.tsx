@@ -62,7 +62,7 @@ export const getActionLabel = (action: string) => {
     case "WASTE":
       return "Zayiat Kaydi";
     case "ADJUSTMENT":
-      return "Sayim Duzeltmesi";
+      return "Sayım Duzeltmesi";
     default:
       return action;
   }
